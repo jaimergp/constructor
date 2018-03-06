@@ -33,6 +33,7 @@ def render_jinja(data, directory, content_filter):
     loader = FilteredLoader(FileSystemLoader(directory), content_filter)
     env = Environment(loader=loader)
     env.globals['environ'] = meta_vars(directory)
+    env.globals['PY_VERSION'] = '{}.{}'.format(*sys.version_info[:2])
     try:
         template = env.from_string(data)
         rendered = template.render()
