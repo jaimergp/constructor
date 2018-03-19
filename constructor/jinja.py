@@ -44,14 +44,19 @@ def render_jinja(data, directory, content_filter):
 
 def meta_vars(repo_dir):
     d = os.environ.copy()
-    git_dir = os.path.join(repo_dir, '.git')
-
+    for i in range(5):
+        pathblocks = [repo_dir] + ['..'] * i + ['.git']
+        git_dir = os.path.join(*pathblocks)
+        if os.path.exists(git_dir):
+            break
+    else:
+        return d
     if not isinstance(git_dir, str):
         # On Windows, subprocess env can't handle unicode.
         git_dir = git_dir.encode(sys.getfilesystemencoding() or 'utf-8')
 
     git_exe = external.find_executable('git')
-    if git_exe and os.path.exists(git_dir):
+    if git_exe:
         d.update(get_git_info(git_exe, git_dir, False))
     return d
 
