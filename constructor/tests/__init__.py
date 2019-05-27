@@ -1,4 +1,4 @@
-# (c) 2016 Continuum Analytics, Inc. / http://continuum.io
+# (c) 2016 Anaconda, Inc. / https://anaconda.com
 # All Rights Reserved
 #
 # constructor is distributed under the terms of the BSD 3-clause license.
@@ -10,7 +10,7 @@ import os
 from os.path import dirname
 import sys
 
-from . import test_install, test_parser, test_utils
+from . import test_install, test_utils
 from .. import __file__ as CONSTRUCTOR_LOCATION, __version__ as CONSTRUCTOR_VERSION
 from ..conda_interface import CONDA_INTERFACE_VERSION, conda_interface_type
 
@@ -40,7 +40,6 @@ def main():
         from ..osxpkg import OSX_DIR
         assert len(os.listdir(OSX_DIR)) == 6
 
-    test_parser.test_1()
     test_utils.main()
     assert test_install.run().wasSuccessful() == True
 

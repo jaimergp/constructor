@@ -1,4 +1,4 @@
-# (c) 2016 Continuum Analytics, Inc. / http://continuum.io
+# (c) 2016 Anaconda, Inc. / https://anaconda.com
 # All Rights Reserved
 #
 # constructor is distributed under the terms of the BSD 3-clause license.
@@ -142,6 +142,8 @@ def make_nsi(info, dir_path):
                     ('URLS_FILE', 'urls'),
                     ('URLS_TXT_FILE', 'urls.txt'),
                     ('POST_INSTALL', 'post_install.bat'),
+                    ('CONDA_HISTORY', join('conda-meta', 'history')),
+                    ('REPODATA_RECORD', 'repodata_record.json'),
                     ('INDEX_CACHE', 'cache')]:
         replace[key] = join(dir_path, fn)
     for key in replace:
@@ -149,7 +151,7 @@ def make_nsi(info, dir_path):
 
     data = read_nsi_tmpl()
     ppd = ns_platform(info['_platform'])
-    ppd['add_to_path_default'] = info.get('add_to_path_default', None)
+    ppd['initialize_by_default'] = info.get('initialize_by_default', None)
     ppd['register_python_default'] = info.get('register_python_default', None)
     data = preprocess(data, ppd)
     data = fill_template(data, replace)
@@ -171,6 +173,9 @@ def make_nsi(info, dir_path):
         ('@WRITE_CONDARC@', '\n    '.join(add_condarc(info))),
         ('@MENU_PKGS@', ' '.join(info.get('menu_packages', []))),
         ('@SIZE@', str(approx_pkgs_size_kb)),
+        ('@UNINSTALL_NAME@', info.get('uninstall_name',
+            '${NAME} ${VERSION} (Python ${PYVERSION} ${ARCH})'
+        )),
         ]:
         data = data.replace(key, value)
 

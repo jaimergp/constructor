@@ -1,4 +1,4 @@
-# (c) 2016 Continuum Analytics, Inc. / http://continuum.io
+# (c) 2016 Anaconda, Inc. / https://anaconda.com
 # All Rights Reserved
 #
 # constructor is distributed under the terms of the BSD 3-clause license.
@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 from os.path import basename, dirname, getsize, isdir, join
+import json
 import shutil
 import tarfile
 import tempfile
@@ -40,7 +41,7 @@ def get_header(tarball, info):
     ppd['has_license'] = has_license
     for key in 'pre_install', 'post_install':
         ppd['has_%s' % key] = bool(key in info)
-    ppd['add_to_path_default'] = info.get('add_to_path_default', None)
+    ppd['initialize_by_default'] = info.get('initialize_by_default', None)
 
     install_lines = ['install_dist %s' % d for d in dists]
     install_lines.extend(add_condarc(info))
@@ -92,6 +93,13 @@ def create(info, verbose=False):
         for cf in os.listdir(cache_dir):
             if cf.endswith(".json"):
                 p_t.add(join(cache_dir, cf), 'pkgs/cache/' + cf)
+    p_t.add(join(tmp_dir, 'conda-meta', 'history'), 'conda-meta/history')
+    for dist in info['_dists']:
+        _dist = filename_dist(dist)[:-8]
+        record_file = join(_dist, 'info', 'repodata_record.json')
+        record_file_src = join(tmp_dir, record_file)
+        record_file_dest = join('pkgs', record_file)
+        p_t.add(record_file_src, record_file_dest)
     p_t.close()
 
     tarball = join(tmp_dir, 'tmp.tar')

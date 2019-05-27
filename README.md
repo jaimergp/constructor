@@ -17,8 +17,7 @@ proprietary and known as `cas-installer`.
 
 ## Installation:
 
-As of version 1.3.0, `constructor` may be installed into any conda
-environment using:
+`constructor` can be installed into the base environment using:
 
     $ conda install constructor
 
@@ -54,7 +53,19 @@ in <a href="./examples/maxiconda">examples/maxiconda</a>.
     explicitly.
     In particular, on Windows this means that if you want the "Anaconda
     Prompt", you will have to list `console_shortcut`, as well as `menuinst`.
-  * For Windows builds, add the Continuum channels `/free` and `/msys2`
+  * For Windows builds, add the Anaconda channel `/msys2`
     to the file `constructor.yaml`. This provides packages such as
     `m2w64-toolchain` which is a dependency of `theano`. It is best to
-    add `/msys2` as `http://repo.continuum.io/pkgs/msys2`.
+    add `/msys2` as `http://repo.anaconda.com/pkgs/msys2`.
+  * Constructor requires conda >=4.5.0
+
+
+## Devel
+
+To build or update ``README.md`` at the root of the repo you'll need jinja2 installed
+
+```
+conda install jinja2
+```
+
+and then run ``make doc``. Or invoke the script directly with ``python scripts/make_docs.py``.

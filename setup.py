@@ -1,4 +1,4 @@
-# (c) 2016-2017 Continuum Analytics, Inc. / http://continuum.io
+# (c) 2016-2017 Anaconda, Inc. / http://anaconda.com
 # All Rights Reserved
 #
 # constructor is distributed under the terms of the BSD 3-clause license.
@@ -85,8 +85,8 @@ version = re.search(r"^__version__\s*=\s*(['\"])(\S*)\1", data, re.M).group(2)
 setup(
     name="constructor",
     version=version,
-    author="Ilan Schnell",
-    author_email="ilan@continuum.io",
+    author="Anaconda, Inc.",
+    author_email="conda@anaconda.com",
     url="https://github.com/conda/constructor",
     license="BSD",
     description="create installer from conda packages",

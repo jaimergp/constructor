@@ -66,6 +66,7 @@ BATCH=0
 FORCE=0
 SKIP_SCRIPTS=0
 TEST=0
+REINSTALL=0
 USAGE="
 usage: $0 [options]
 
@@ -332,6 +333,8 @@ if [ "$FORCE" = "0" ] && [ -e "$PREFIX" ]; then
     printf "ERROR: File or directory already exists: '%s'\\n" "$PREFIX" >&2
     printf "If you want to update an existing installation, use the -u option.\\n" >&2
     exit 1
+elif [ "$FORCE" = "1" ] && [ -e "$PREFIX" ]; then
+    REINSTALL=1
 fi
 
 
@@ -397,7 +400,11 @@ install_dist()
     # which does the post extract steps (update prefix files, run 'post-link',
     # and creates the conda metadata).  Note that this is all done without
     # conda.
-    printf "installing: %s ...\\n" "$1"
+    if [ "$REINSTALL" = "1" ]; then
+      printf "reinstalling: %s ...\\n" "$1"
+    else
+      printf "installing: %s ...\\n" "$1"
+    fi
     PKG_PATH="$PREFIX"/pkgs/$1
     PKG="$PKG_PATH".tar.bz2
     mkdir -p $PKG_PATH || exit 1
@@ -467,15 +474,15 @@ if [ "$BATCH" = "0" ]; then
     BASH_RC="$HOME"/.bashrc
     DEFAULT=no
 #endif
-#if add_to_path_default is True
+#if initialize_by_default is True
     DEFAULT=yes
 #endif
-#if add_to_path_default is False
+#if initialize_by_default is False
     DEFAULT=no
 #endif
 
-    printf "Do you wish the installer to prepend the __NAME__ install location\\n"
-    printf "to PATH in your %s ? [yes|no]\\n" "$BASH_RC"
+    printf "Do you wish the installer to initialize __NAME__\\n"
+    printf "in your %s ? [yes|no]\\n" "$BASH_RC"
     printf "[%s] >>> " "$DEFAULT"
     read -r ans
     if [ "$ans" = "" ]; then
@@ -485,28 +492,47 @@ if [ "$BATCH" = "0" ]; then
        [ "$ans" != "y" ]   && [ "$ans" != "Y" ]
     then
         printf "\\n"
-        printf "You may wish to edit your .bashrc to prepend the __NAME__ install location to PATH:\\n"
+        printf "You may wish to edit your $BASH_RC to setup __NAME__:\\n"
         printf "\\n"
-        printf "export PATH=%s/bin:\$PATH\\n" "$PREFIX"
+        if [ -f "$PREFIX/etc/profile.d/conda.sh" ]; then
+            printf "source $PREFIX/etc/profile.d/conda.sh\\n"
+        else
+            printf "export PATH=\"$PREFIX/bin:\$PATH\"\\n"
+        fi
         printf "\\n"
     else
         if [ -f "$BASH_RC" ]; then
             printf "\\n"
-            printf "Appending source %s/bin/activate to %s\\n" "$PREFIX" "$BASH_RC"
+            printf "Initializing __NAME__ in %s\\n" "$BASH_RC"
             printf "A backup will be made to: %s-__name__.bak\\n" "$BASH_RC"
             printf "\\n"
             cp "$BASH_RC" "${BASH_RC}"-__name__.bak
         else
             printf "\\n"
-            printf "Appending source %s/bin/activate in\\n" "$PREFIX"
-            printf "newly created %s\\n" "$BASH_RC"
+            printf "Initializing __NAME__ in newly created %s\\n" "$BASH_RC"
         fi
+        cat <<EOF >> "$BASH_RC"
+
+# added by __NAME__ __VERSION__ installer
+# >>> conda init >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="\$(CONDA_REPORT_ERRORS=false '$PREFIX/bin/conda' shell.bash hook 2> /dev/null)"
+if [ \$? -eq 0 ]; then
+    \\eval "\$__conda_setup"
+else
+    if [ -f "$PREFIX/etc/profile.d/conda.sh" ]; then
+        . "$PREFIX/etc/profile.d/conda.sh"
+        CONDA_CHANGEPS1=false conda activate base
+    else
+        \\export PATH="$PREFIX/bin:\$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda init <<<
+EOF
         printf "\\n"
         printf "For this change to become active, you have to open a new terminal.\\n"
         printf "\\n"
-        printf "\\n" >> "$BASH_RC"
-        printf "# added by __NAME__ installer\\n"            >> "$BASH_RC"
-        printf "export PATH=\"%s/bin:\$PATH\"\\n" "$PREFIX"  >> "$BASH_RC"
     fi
 
     printf "Thank you for installing __NAME__!\\n"

@@ -1,4 +1,4 @@
-# (c) 2012-2016 Continuum Analytics, Inc. / http://continuum.io
+# (c) 2012-2016 Anaconda, Inc. / https://anaconda.com
 # All Rights Reserved
 #
 # conda is distributed under the terms of the BSD 3-clause license.
@@ -219,8 +219,8 @@ def create_meta(prefix, dist, info_dir, extra_info):
     """
     Create the conda metadata, in a given prefix, for a given package.
     """
-    # read info/index.json first
-    with open(join(info_dir, 'index.json')) as fi:
+    # read info/repodata_record.json first
+    with open(join(info_dir, 'repodata_record.json')) as fi:
         meta = json.load(fi)
     # add extra info
     meta.update(extra_info)
@@ -228,8 +228,6 @@ def create_meta(prefix, dist, info_dir, extra_info):
     meta_dir = join(prefix, 'conda-meta')
     if not isdir(meta_dir):
         os.makedirs(meta_dir)
-        with open(join(meta_dir, 'history'), 'w') as fo:
-            fo.write('')
     with open(join(meta_dir, dist + '.json'), 'w') as fo:
         json.dump(meta, fo, indent=2, sort_keys=True)
 
@@ -518,39 +516,6 @@ def multi_post_extract():
 
 
 def main():
-    global ROOT_PREFIX, PKGS_DIR
-
-    p = OptionParser(description="conda link tool used by installers")
-
-    p.add_option('--root-prefix',
-                 action="store",
-                 default=abspath(join(__file__, '..', '..')),
-                 help="root prefix (defaults to %default)")
-
-    p.add_option('--post',
-                 action="store",
-                 help="perform post extract (on a single package), "
-                      "in environment NAME",
-                 metavar='NAME')
-
-    opts, args = p.parse_args()
-    if args:
-        p.error('no arguments expected')
-
-    ROOT_PREFIX = opts.root_prefix.replace('//', '/')
-    PKGS_DIR = join(ROOT_PREFIX, 'pkgs')
-
-    if opts.post:
-        post_extract(opts.post)
-        return
-
-    if FORCE:
-        print("using -f (force) option")
-
-    link_idists()
-
-
-def main2():
     global SKIP_SCRIPTS, ROOT_PREFIX, PKGS_DIR
 
     p = OptionParser(description="conda post extract tool used by installers")
@@ -577,12 +542,25 @@ def main2():
                  default=abspath(join(__file__, '..', '..')),
                  help="root prefix (defaults to %default)")
 
+    p.add_option('--post',
+                 action="store",
+                 help="perform post extract (on a single package), "
+                      "in environment NAME",
+                 metavar='NAME')
+
     opts, args = p.parse_args()
     ROOT_PREFIX = opts.root_prefix.replace('//', '/')
     PKGS_DIR = join(ROOT_PREFIX, 'pkgs')
 
     if args:
         p.error('no arguments expected')
+
+    if FORCE:
+        print("using -f (force) option")
+
+    if opts.post:
+        post_extract(opts.post)
+        return
 
     if opts.skip_scripts:
         SKIP_SCRIPTS = True
@@ -599,7 +577,10 @@ def main2():
         link_dist(opts.link_dist)
         return
 
-    post_extract()
+    if IDISTS:
+        link_idists()
+    else:
+        post_extract()
 
 
 def warn_on_special_chrs():
@@ -611,8 +592,5 @@ def warn_on_special_chrs():
 
 
 if __name__ == '__main__':
-    if IDISTS:
-        main()
-        warn_on_special_chrs()
-    else: # common usecase
-        main2()
+    main()
+    warn_on_special_chrs()

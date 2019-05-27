@@ -1,0 +1,11 @@
+name: MinicondaX
+version: X
+
+install_in_dependency_order: True
+
+channels:
+  - http://repo.anaconda.com/pkgs/main/
+
+specs:
+  - python
+  - conda

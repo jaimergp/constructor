@@ -30,7 +30,7 @@ Unicode "true"
 !define PYVERSION __PYVERSION__
 !define DEFAULT_PREFIX __DEFAULT_PREFIX__
 !define PRODUCT_NAME "${NAME} ${VERSION} (${ARCH})"
-!define UNINSTALL_NAME "Python ${PYVERSION} (${NAME} ${VERSION} ${ARCH})"
+!define UNINSTALL_NAME "@UNINSTALL_NAME@"
 !define UNINSTREG "SOFTWARE\Microsoft\Windows\CurrentVersion\
                    \Uninstall\${UNINSTALL_NAME}"
 
@@ -491,11 +491,11 @@ Function .onInit
     # Initialize the default settings for the anaconda custom options
     Call mui_AnaCustomOptions_InitDefaults
     # Override custom options with explicitly given values from contruct.yaml.
-    # If add_to_path_default (register_python_default) is None, do nothing.
-#if add_to_path_default is True
+    # If initialize_by_default (register_python_default) is None, do nothing.
+#if initialize_by_default is True
     StrCpy $Ana_AddToPath_State ${BST_CHECKED}
 #endif
-#if add_to_path_default is False
+#if initialize_by_default is False
     StrCpy $Ana_AddToPath_State ${BST_UNCHECKED}
 #endif
 #if register_python_default is True
@@ -560,6 +560,45 @@ Function CheckForSpaces
     Exch $R0
 FunctionEnd
 
+# http://nsis.sourceforge.net/StrCSpn,_StrCSpnReverse:_Scan_strings_for_characters
+Function StrCSpn
+ Exch $R0 ; string to check
+ Exch
+ Exch $R1 ; string of chars
+ Push $R2 ; current char
+ Push $R3 ; current char
+ Push $R4 ; char loop
+ Push $R5 ; char loop
+
+  StrCpy $R4 -1
+
+  NextChar:
+  StrCpy $R2 $R1 1 $R4
+  IntOp $R4 $R4 - 1
+   StrCmp $R2 "" StrOK
+
+   StrCpy $R5 -1
+
+   NextCharCheck:
+   StrCpy $R3 $R0 1 $R5
+   IntOp $R5 $R5 - 1
+    StrCmp $R3 "" NextChar
+    StrCmp $R3 $R2 0 NextCharCheck
+     StrCpy $R0 $R2
+     Goto Done
+
+ StrOK:
+ StrCpy $R0 ""
+
+ Done:
+
+ Pop $R5
+ Pop $R4
+ Pop $R3
+ Pop $R2
+ Pop $R1
+ Exch $R0
+FunctionEnd
 
 # http://stackoverflow.com/a/29569614/1170370
 !macro _IsNonEmptyDirectory _a _b _t _f
@@ -610,6 +649,18 @@ Function OnDirectoryLeave
 
     NoSpaces:
 
+    # List of characters not allowed anywhere in $INSTDIR
+    Push "^%!=,"
+    Push $INSTDIR
+    Call StrCSpn
+    Pop $R0
+
+    StrCmp $R0 "" NoInvalidCharaceters
+        MessageBox MB_OK|MB_ICONEXCLAMATION \
+            "Error: 'Destination Folder' contains the following invalid character: $R0"
+        abort
+    NoInvalidCharaceters:
+
     UnicodePathTest::SpecialCharPathTest $INSTDIR
     Pop $R1
     StrCmp $R1 "nothingspecial" nothing_special_path
@@ -636,6 +687,19 @@ Function OnDirectoryLeave
           abort
 
       valid_path:
+
+    Push $R1
+    ${IsWritable} $INSTDIR $R1
+    IntCmp $R1 0 pathgood
+    Pop $R1
+    MessageBox mb_ok|MB_ICONEXCLAMATION \
+        "Error: Path $INSTDIR is not writable. Please check permissions or \
+         try respawning the installer with elevated privileges."
+    Abort
+
+    pathgood:
+    Pop $R1
+
 FunctionEnd
 
 Function .onVerifyInstDir
@@ -673,17 +737,23 @@ Section "Install"
     File "@NSIS_DIR@\_nsis.py"
     File "@NSIS_DIR@\_system_path.py"
 
-    ReadEnvStr $0 PATH
+    ReadEnvStr $0 SystemRoot
     # set PATH for the installer process, so that MSVC runtimes get found OK
+    #    This is also isolating PATH to be just us and Windows core stuff, which hopefully avoids
+    #    clashes with other stuff on PATH
     System::Call 'kernel32::SetEnvironmentVariable(t,t)i("PATH", \
-                  "$INSTDIR\Library\bin;$INSTDIR\Scripts;$INSTDIR;$0").r0'
+                 "$INSTDIR\Library\bin;$INSTDIR\Scripts;$INSTDIR;$0;$0\system32;$0\system32\Wbem").r0'
+
+    SetOutPath "$INSTDIR\conda-meta"
+    File __CONDA_HISTORY__
 
     SetOutPath "$INSTDIR\pkgs"
     File __INSTALL_PY__
     File __URLS_FILE__
     File __URLS_TXT_FILE__
     File __POST_INSTALL__
-    File /r __INDEX_CACHE__
+    File /nonfatal /r __INDEX_CACHE__
+    File /r __REPODATA_RECORD__
 
     @PKG_COMMANDS@
 
@@ -765,6 +835,10 @@ Section "Uninstall"
     # Remove menu items, path entries
     ExecWait '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" rmmenus'
     ExecWait '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" rmpath'
+    ExecWait '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" rmreg'
+    ExecWait '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" del "$INSTDIR"'
+
+    RMDir /r /REBOOTOK "$INSTDIR"
 
     DeleteRegKey SHCTX "${UNINSTREG}"
     # If Anaconda was registered as the official Python for this version,
@@ -773,8 +847,5 @@ Section "Uninstall"
     ${If} $0 == "$INSTDIR"
         DeleteRegKey SHCTX "Software\Python\PythonCore\${PY_VER}"
     ${EndIf}
-
-    # Trivial removal of whole directory for now
-    RMDir /r /REBOOTOK "$INSTDIR"
 
 SectionEnd

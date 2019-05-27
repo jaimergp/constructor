@@ -15,24 +15,42 @@ except ImportError:
 if conda_interface_type == 'conda':
     CONDA_MAJOR_MINOR = tuple(int(x) for x in CONDA_INTERFACE_VERSION.split('.')[:2])
 
-    from conda.base.context import context
-    cc_platform = context.subdir
-
-    from conda.exports import fetch_index as _fetch_index, cache_fn_url as _cache_fn_url
-    from conda.exports import Resolve, NoPackagesFound
-    from conda.exports import default_prefix
-    from conda.exports import linked_data
+    from conda._vendor.toolz.itertoolz import (
+        concatv as _concatv, get as _get, groupby as _groupby,
+    )
+    from conda.base.context import (
+        context as _conda_context, reset_context as _conda_reset_context,
+    )
+    from conda.common.io import env_vars as _env_vars
+    from conda.core.package_cache_data import (
+        PackageCacheData as _PackageCacheData,
+    )
+    from conda.core.prefix_data import PrefixData as _PrefixData
+    from conda.core.solve import Solver as _Solver
+    from conda.exports import default_prefix as _default_prefix
+    from conda.gateways.disk.read import read_paths_json as _read_paths_json
+    from conda.models.dist import Dist as _Dist
+    from conda.exports import MatchSpec as _MatchSpec
     from conda.exports import download as _download
+    try:
+        from conda.models.records import PackageCacheRecord as _PackageCacheRecord
+    except ImportError:
+        from conda.models.package_cache_record import PackageCacheRecord as _PackageCacheRecord
 
-    from conda.models.channel import prioritize_channels
+    # used by fcp.py
+    PackageCacheData = _PackageCacheData
+    Solver, read_paths_json = _Solver, _read_paths_json
+    concatv, get, groupby = _concatv, _get, _groupby
+    conda_context, env_vars, conda_reset_context = _conda_context, _env_vars, _conda_reset_context
+    download, PackageCacheRecord = _download, _PackageCacheRecord
 
-    def fetch_index(channel_urls):
-        return _fetch_index(prioritize_channels(channel_urls))
+    # used by preconda.py
+    Dist, MatchSpec, PrefixData, default_prefix = _Dist, _MatchSpec, _PrefixData, _default_prefix
 
-    def fetch_pkg(pkginfo, download_dir):
-        pkg_url = pkginfo['url']
-        assert pkg_url
-        _download(pkg_url, join(download_dir, pkginfo['fn']))
+    cc_platform = conda_context.subdir
+
+
+    from conda.exports import cache_fn_url as _cache_fn_url
 
     def write_repodata(cache_dir, url):
         if CONDA_MAJOR_MINOR >= (4, 5):
@@ -57,9 +75,3 @@ if conda_interface_type == 'conda':
         else:
             raise NotImplementedError("unsupported version of conda: %s" % CONDA_INTERFACE_VERSION)
 
-
-cc_platform = cc_platform
-fetch_index, fetch_pkg = fetch_index, fetch_pkg
-Resolve, NoPackagesFound = Resolve, NoPackagesFound
-default_prefix = default_prefix
-linked_data = linked_data

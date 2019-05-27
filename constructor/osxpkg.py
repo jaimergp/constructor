@@ -133,6 +133,42 @@ def fresh_dir(dir_path):
 
 
 def pkgbuild(name, scripts=None):
+    # Some packages like qt might have .app folders like qdbusviewer.app. The
+    # installer by default makes this .app relocatable, so that if it is
+    # already installed, it will upgrade it with the new one instead of just
+    # installing the new one in the chosen installation directory. An example
+    # log entry for this:
+
+    # PackageKit:
+    # /path_new/bin/qdbusviewer.app relocated to /path_old/bin/qdbusviewer.app
+
+    # This can cause trouble, expesically if any of the files inside that
+    # folder require prefix patching and the installer will fail, since it
+    # won't find the file. A general practice was to rename <name>.app to
+    # <name>app so that the installer would ignore analyzing it, but that was a
+    # hack as it also required a post-link script to rename them back on
+    # installation. To avoid such nastiness, we mark all components in the
+    # plist file of the parent pkg file, (in this case, qt.pkg) as non-relocatable.
+
+    # xref(s):
+    #  - https://apple.stackexchange.com/a/219144/243863
+    #  - https://stackoverflow.com/a/26202210/1005215
+    #  - https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/pkgbuild.1.html
+    #  - https://github.com/conda-forge/python.app-feedstock/blob/master/recipe/post-link.sh
+
+    components_plist = '{}/{}.plist'.format(PACKAGES_DIR, name)
+
+    check_call([
+        'pkgbuild',
+        '--root', PACKAGE_ROOT,
+        '--analyze', components_plist])
+
+    check_call([
+        'plutil',
+        '-replace', 'BundleIsRelocatable',
+        '-bool', 'false',
+        components_plist])
+
     args = [
         "pkgbuild",
         "--root", PACKAGE_ROOT,
@@ -142,11 +178,14 @@ def pkgbuild(name, scripts=None):
             "--scripts", scripts,
         ])
     args.extend([
+        "--component-plist", components_plist,
         "--identifier", "io.continuum.pkg.%s" % name,
         "--ownership", "preserve",
         "%s/%s.pkg" % (PACKAGES_DIR, name),
     ])
     check_call(args)
+
+    os.remove(components_plist)
 
 
 def pkgbuild_script(name, info, src, dst='postinstall'):
@@ -174,13 +213,18 @@ def create(info, verbose=False):
     pkgs_dir = join(prefix, 'pkgs')
     os.makedirs(pkgs_dir)
     preconda.write_files(info, pkgs_dir)
+
+    # TODO: Refactor code such that the argument to preconda.write_files is
+    # /path/to/base/env, so that such workarounds are not required.
+    shutil.move(join(pkgs_dir, 'conda-meta'), prefix)
+
     pkgbuild('preconda')
 
     for dist in info['_dists']:
         if isinstance(dist, str if version_info[0] >= 3 else basestring):
            fn = dist
            dname = dist[:-8]
-           ndist(fn)
+           ndist = name_dist(fn)
         else:
             fn = dist.fn
             dname = dist.dist_name
@@ -210,6 +254,17 @@ def create(info, verbose=False):
     # can be disabled.
     pkgbuild_script('pathupdate', info, 'update_path.sh')
 
+    post_packages = ['postextract', 'pathupdate']
+
+    # Next, the users post_install script, if specified
+    if info.get('post_install', None) is not None:
+        scripts_dir = join(CACHE_DIR, "scripts")
+        fresh_dir(scripts_dir)
+        move_script(info['post_install'], join(scripts_dir, 'postinstall'), info)
+        fresh_dir(PACKAGE_ROOT)
+        pkgbuild('user_postinstall', scripts_dir)
+        post_packages.append('user_postinstall')
+
     # Next, the script to be run before everything, which checks if Anaconda
     # is already installed.
     pkgbuild_script('apreinstall', info, 'preinstall.sh', 'preinstall')
@@ -217,7 +272,7 @@ def create(info, verbose=False):
     # Now build the final package
     names = ['apreinstall', 'preconda']
     names.extend(name_dist(dist) for dist in info['_dists'])
-    names.extend(['postextract', 'pathupdate'])
+    names.extend(post_packages)
 
     xml_path = join(PACKAGES_DIR, 'distribution.xml')
     args = ["productbuild", "--synthesize"]
