@@ -48,9 +48,7 @@ var /global INSTDIR_JUSTME
 var /global ARGV
 var /global ARGV_Help
 var /global ARGV_InstallationType
-var /global ARGV_AddToPath
 var /global ARGV_KeepPkgCache
-var /global ARGV_RegisterPython
 var /global ARGV_NoRegistry
 var /global ARGV_NoScripts
 var /global ARGV_CheckPathLength
@@ -177,22 +175,18 @@ FunctionEnd
             "Usage: $EXEFILE [options]$\n\
              Options:$\n$\n\
                 /InstallationType=AllUsers [default: JustMe]$\n$\n\
-                /AddToPath=[0|1] [default: 0]$\n$\n\
 #if keep_pkgs is True
                 /KeepPkgCache=[0|1] [default: 1]$\n$\n\
 #endif
 #if keep_pkgs is False
                 /KeepPkgCache=[0|1] [default: 0]$\n$\n\
 #endif
-                /RegisterPython=[0|1] [default: AllUsers: 1, JustMe: 0]$\n$\n\
                 /NoRegistry=[0|1] [default: AllUsers: 0, JustMe: 0]$\n$\n\
                 /NoScripts=[0|1] [default: 0]$\n$\n\
                 /CheckPathLength=[0|1] [default: 1]$\n$\n\
             Examples:$\n\
                 Install for all users, but don't add to PATH env var:$\n\
                     $EXEFILE /InstallationType=AllUsers$\n$\n\
-                Install for just me, add to PATH and register as system Python:$\n\
-                    $EXEFILE /RegisterPython=1 /AddToPath=1$\n$\n\
                 Install for just me, with no registry modification (for CI):$\n\
                     $EXEFILE /NoRegistry=1$\n"
                     Abort
@@ -205,26 +199,6 @@ FunctionEnd
             StrCpy $InstMode ${ALL_USERS}
         ${Else}
             StrCpy $InstMode ${JUST_ME}
-        ${EndIf}
-    ${EndIf}
-
-    ClearErrors
-    ${GetOptions} $ARGV "/RegisterPython=" $ARGV_RegisterPython
-    ${IfNot} ${Errors}
-        ${If} $ARGV_RegisterPython = "1"
-            StrCpy $Ana_RegisterSystemPython_State ${BST_CHECKED}
-        ${ElseIf} $ARGV_RegisterPython = "0"
-            StrCpy $Ana_RegisterSystemPython_State ${BST_UNCHECKED}
-        ${EndIf}
-    ${EndIf}
-
-    ClearErrors
-    ${GetOptions} $ARGV "/AddToPath=" $ARGV_AddToPath
-    ${IfNot} ${Errors}
-        ${If} $ARGV_AddToPath = "1"
-            StrCpy $Ana_AddToPath_State ${BST_CHECKED}
-        ${ElseIf} $ARGV_AddToPath = "0"
-            StrCpy $Ana_AddToPath_State ${BST_UNCHECKED}
         ${EndIf}
     ${EndIf}
 
@@ -541,19 +515,6 @@ Function .onInit
     # Initialize the default settings for the anaconda custom options
     Call mui_AnaCustomOptions_InitDefaults
     # Override custom options with explicitly given values from contruct.yaml.
-    # If initialize_by_default (register_python_default) is None, do nothing.
-#if initialize_by_default is True
-    StrCpy $Ana_AddToPath_State ${BST_CHECKED}
-#endif
-#if initialize_by_default is False
-    StrCpy $Ana_AddToPath_State ${BST_UNCHECKED}
-#endif
-#if register_python_default is True
-    StrCpy $Ana_RegisterSystemPython_State ${BST_CHECKED}
-#endif
-#if register_python_default is False
-    StrCpy $Ana_RegisterSystemPython_State ${BST_UNCHECKED}
-#endif
 #if check_path_length is True
     StrCpy $CheckPathLength "1"
 #endif
@@ -898,12 +859,6 @@ Section "Install"
     SetOutPath "$INSTDIR\conda-meta"
     File __CONDA_HISTORY__
 
-    # Not needed anymore thanks to the new --shortcuts-only arg, set above in @SHORTCUTS@
-    # DetailPrint "Creating @NAME@ menus..."
-    # push '"$INSTDIR\_conda.exe" constructor --prefix "$INSTDIR" --make-menus @MENU_PKGS@'
-    # push 'Failed to create menus'
-    # call AbortRetryNSExecWait
-
     push '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" mkdirs'
     push 'Failed to initialize Anaconda directories'
     call AbortRetryNSExecWait
@@ -920,31 +875,6 @@ Section "Install"
         push '"$INSTDIR\_conda.exe" clean --all --force-pkgs-dirs --yes'
         push 'Failed to clear package cache'
         call AbortRetryNSExecWait
-    ${EndIf}
-
-    ${If} $Ana_AddToPath_State = ${BST_CHECKED}
-        DetailPrint "Adding to PATH..."
-        push '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" addpath ${PYVERSION} ${NAME} ${VERSION} ${ARCH}'
-        push 'Failed to add @NAME@ to the system PATH'
-        call AbortRetryNSExecWait
-    ${EndIf}
-
-    # Create registry entries saying this is the system Python
-    # (for this version)
-    !define PYREG "Software\Python\PythonCore\${PY_VER}"
-    ${If} $Ana_RegisterSystemPython_State == ${BST_CHECKED}
-        WriteRegStr SHCTX "${PYREG}\Help\Main Python Documentation" \
-            "Main Python Documentation" \
-            "$INSTDIR\Doc\python${PYVERSION_JUSTDIGITS}.chm"
-
-        WriteRegStr SHCTX "${PYREG}\InstallPath" "" "$INSTDIR"
-
-        WriteRegStr SHCTX "${PYREG}\InstallPath\InstallGroup" \
-            "" "Python ${PY_VER}"
-
-        WriteRegStr SHCTX "${PYREG}\Modules" "" ""
-        WriteRegStr SHCTX "${PYREG}\PythonPath" \
-            "" "$INSTDIR\Lib;$INSTDIR\DLLs"
     ${EndIf}
 
     ${If} $ARGV_NoRegistry == "0"
@@ -990,17 +920,10 @@ Section "Uninstall"
     System::Call 'kernel32::SetEnvironmentVariable(t,t)i("CONDA_DLL_SEARCH_MODIFICATION_ENABLE", "1").r0'
 
     !insertmacro ExecWaitLibNsisCmd "pre_uninstall"
-    !insertmacro ExecWaitLibNsisCmd "rmpath"
     !insertmacro ExecWaitLibNsisCmd "rmreg"
     !insertmacro ExecWaitLibNsisCmd 'del "$INSTDIR"'
 
     RMDir /r /REBOOTOK "$INSTDIR"
 
     DeleteRegKey SHCTX "${UNINSTREG}"
-    # If Anaconda was registered as the official Python for this version,
-    # remove it from the registry
-    ReadRegStr $0 SHCTX "Software\Python\PythonCore\${PY_VER}\InstallPath" ""
-    ${If} $0 == "$INSTDIR"
-        DeleteRegKey SHCTX "Software\Python\PythonCore\${PY_VER}"
-    ${EndIf}
 SectionEnd
