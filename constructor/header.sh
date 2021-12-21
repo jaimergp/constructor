@@ -499,7 +499,7 @@ POSTCONDA="$PREFIX/postconda.tar.bz2"
 rm -f "$POSTCONDA"
 
 # #if has_conda
-# rm -f $CONDA_EXEC
+# rm -f $CONDA_EXEC
 # #endif
 rm -f $PREFIX/pkgs/env.txt
 
