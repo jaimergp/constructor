@@ -552,7 +552,7 @@ if [ "$PYTHONPATH" != "" ]; then
     printf "    in __NAME__: $PREFIX\\n"
 fi
 
-if [ "$BATCH" = "0" ]; then
+# if [ "$BATCH" = "0" ]; then
 # #if has_conda
 #     # Interactive mode.
 #   #if osx
