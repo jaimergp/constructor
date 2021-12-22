@@ -89,20 +89,20 @@ Function mui_AnaCustomOptions_Show
     ;      detect ${NAME} as the primary Python ${PY_VER} on the system."
     ; Pop $Ana_RegisterSystemPython_Label
 
-    ${NSD_CreateCheckbox} 0 85u 100% 11u "Clear the package cache upon completion"
+    ${NSD_CreateCheckbox} 0 12u 100% 11u "Clear the package cache upon completion"
     Pop $mui_AnaCustomOptions.ClearPkgCache
     ${NSD_SetState} $mui_AnaCustomOptions.ClearPkgCache $Ana_ClearPkgCache_State
     ${NSD_OnClick} $mui_AnaCustomOptions.ClearPkgCache ClearPkgCache_OnClick
-    ${NSD_CreateLabel} 5% 97u 90% 11u \
+    ${NSD_CreateLabel} 5% 24u 90% 11u \
         "Recommended. Recovers some disk space without harming functionality."
     Pop $Ana_ClearPkgCache_Label
 
     ${If} "${POST_INSTALL_DESC}" != ""
-    ${NSD_CreateCheckbox} 0 108u 100% 11u "Run the post-install script"
+    ${NSD_CreateCheckbox} 0 36u 100% 11u "Run the post-install script"
     Pop $mui_AnaCustomOptions.PostInstall
     ${NSD_SetState} $mui_AnaCustomOptions.PostInstall $Ana_PostInstall_State
     ${NSD_OnClick} $mui_AnaCustomOptions.PostInstall PostInstall_OnClick
-    ${NSD_CreateLabel} 5% 120u 90% 20u "Recommended. ${POST_INSTALL_DESC}"
+    ${NSD_CreateLabel} 5% 48u 90% 20u "Recommended. ${POST_INSTALL_DESC}"
     Pop $Ana_PostInstall_Label
     ${EndIf}
 
