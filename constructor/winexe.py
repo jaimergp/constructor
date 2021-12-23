@@ -232,8 +232,14 @@ def create(info, verbose=False):
     if pfx_certificate:
         signtool = os.environ.get("CONSTRUCTOR_SIGNTOOL_PATH", "signtool")
         password = os.environ.get("CONSTRUCTOR_PFX_CERTIFICATE_PASSWORD")
-        timestamp_server = os.environ.get("CONSTRUCTOR_SIGNTOOL_TIMESTAMP_SERVER_URL", "http://timestamp.sectigo.com")
-        args = [signtool, "sign", "/f", pfx_certificate, "/tr", timestamp_server, "/td", "sha256", "/fd", "sha256"]
+        timestamp_server = os.environ.get(
+            "CONSTRUCTOR_SIGNTOOL_TIMESTAMP_SERVER_URL",
+            "http://timestamp.sectigo.com"
+        )
+        args = [
+            signtool, "sign", "/f", pfx_certificate, "/tr",
+            timestamp_server, "/td", "sha256", "/fd", "sha256"
+        ]
         if password:
             args += ["/p", password]
         args.append(info["_outpath"])
