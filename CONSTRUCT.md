@@ -253,6 +253,14 @@ _required:_ no<br/>
 _type:_ string<br/>
 Name of the company/entity who is responsible for the installer.
 
+## `reverse_domain_identifier`
+
+_required:_ no<br/>
+_type:_ string<br/>
+Unique identifier for this package, formatted with reverse domain notation. This is
+used internally in the PKG installers to handle future updates and others. If not
+provided, it will default to `io.continuum`. (MacOS only)
+
 ## `uninstall_name`
 
 _required:_ no<br/>

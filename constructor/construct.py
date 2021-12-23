@@ -197,6 +197,12 @@ file&mdash;`write_condarc`, `conda_default_channels`, etc.&mdash;are ignored.
 Name of the company/entity who is responsible for the installer.
 '''),
 
+    ('reverse_domain_identifier', False, str, '''
+Unique identifier for this package, formatted with reverse domain notation. This is
+used internally in the PKG installers to handle future updates and others. If not
+provided, it will default to `io.continuum`. (MacOS only)
+'''),
+
     ('uninstall_name',         False, str, '''
 Application name in the Windows "Programs and Features" control panel.
 Defaults to `${NAME} ${VERSION} (Python ${PYVERSION} ${ARCH})`.

@@ -251,23 +251,29 @@ def fresh_dir(dir_path):
     os.mkdir(dir_path)
 
 
-def pkgbuild(name):
-    args = ["pkgbuild", "--root", PACKAGE_ROOT]
-    if isdir(SCRIPTS_DIR) and os.listdir(SCRIPTS_DIR):
-        args.extend(["--scripts", SCRIPTS_DIR])
-    args.extend([
-        "--identifier", "io.continuum.pkg.%s" % name,
+def pkgbuild(name, identifier=None, version=None):
+    if identifier is None:
+        identifier = "io.continuum"
+    args = [
+        "pkgbuild", "--root", PACKAGE_ROOT,
+        "--identifier", "%s.pkg.%s" % (identifier, name),
         "--ownership", "preserve",
-        "%s/%s.pkg" % (PACKAGES_DIR, name),
-    ])
+    ]
+    if isdir(SCRIPTS_DIR) and os.listdir(SCRIPTS_DIR):
+        args += ["--scripts", SCRIPTS_DIR]
+    if version:
+        args += ["--version", version]
+    output = os.path.join(PACKAGES_DIR, f"{name}.pkg")
+    args += [output]
     check_call(args)
+    return output
 
 
 def pkgbuild_script(name, info, src, dst='postinstall'):
     fresh_dir(SCRIPTS_DIR)
     fresh_dir(PACKAGE_ROOT)
     move_script(join(OSX_DIR, src), join(SCRIPTS_DIR, dst), info)
-    pkgbuild(name)
+    pkgbuild(name, identifier=info.get("reverse_domain_identifier"))
     rm_rf(SCRIPTS_DIR)
 
 
@@ -330,7 +336,7 @@ def create(info, verbose=False):
         "productbuild",
         "--distribution", xml_path,
         "--package-path", PACKAGES_DIR,
-        "--identifier", info['name'],
+        "--identifier", info.get("reverse_domain_identifier", info['name']),
         "tmp.pkg" if identity_name else info['_outpath']
     ])
     if identity_name:
