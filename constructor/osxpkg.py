@@ -293,7 +293,7 @@ def create(info, verbose=False):
     preconda.write_files(info, pkgs_dir)
     for dist in info['_dists']:
         os.link(join(CACHE_DIR, dist), join(pkgs_dir, dist))
-    shutil.copyfile(info['_conda_exe'], join(prefix, "conda.exe"))
+    shutil.copyfile(info['_conda_exe'], join(prefix, "_conda.exe"))
     # This script checks to see if the install location already exists
     move_script(join(OSX_DIR, 'preinstall.sh'), join(SCRIPTS_DIR, 'preinstall'), info)
     # This script performs the full installation
