@@ -226,6 +226,26 @@ def create(info, verbose=False):
             print(msg)
     else:
         check_call(args)
+
+    # Signing
+    pfx_certificate = info.get("signing_certificate")
+    if pfx_certificate:
+        signtool = os.environ.get("CONSTRUCTOR_SIGNTOOL_PATH", "signtool")
+        password = os.environ.get("CONSTRUCTOR_PFX_CERTIFICATE_PASSWORD")
+        timestamp_server = os.environ.get("CONSTRUCTOR_SIGNTOOL_TIMESTAMP_SERVER_URL", "http://timestamp.comodoca.com/authenticode")
+        args = [signtool, "sign", "/f", pfx_certificate, "/t", timestamp_server]
+        if password:
+            args += ["/p", password]
+        args.append(info["_outpath"])
+        print("Signing installer with", pfx_certificate)
+        if verbose:
+            sub = Popen(args, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+            stdout, stderr = sub.communicate()
+            for msg, information in zip((stdout, stderr), ('stdout', 'stderr')):
+                print(f"signtool ({information}):")
+                print(msg)
+        else:
+            check_call(args)
     shutil.rmtree(tmp_dir)
 
 
