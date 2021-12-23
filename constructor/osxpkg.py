@@ -7,7 +7,7 @@ from pathlib import Path
 
 import constructor.preconda as preconda
 from constructor.imaging import write_images
-from constructor.utils import add_condarc, get_final_channels, rm_rf
+from constructor.utils import add_condarc, get_final_channels, rm_rf, approx_size_kb
 
 
 OSX_DIR = join(dirname(__file__), "osx")
@@ -194,9 +194,11 @@ def modify_xml(xml_path, info):
             path_choice.set('visible', 'true')
             path_choice.set('title', "Clear the package cache")
             path_choice.set('start_selected', 'false' if info.get('keep_pkgs') else 'true')
-            path_description = """
+            cache_size_mb = approx_size_kb(info, "tarballs") // 1024
+            size_text = f"~{cache_size_mb}MB" if cache_size_mb > 0 else "some space"
+            path_description = f"""
             If this box is checked, the package cache will be cleaned after the
-            installer is complete, reclaiming some disk space. If unchecked, the
+            installer is complete, reclaiming {size_text}. If unchecked, the
             package cache contents will be preserved.
             """
             path_choice.set('description', ' '.join(path_description.split()))
@@ -269,6 +271,31 @@ def pkgbuild(name, identifier=None, version=None):
     return output
 
 
+def pkgbuild_main(info):
+    pkg = pkgbuild("main", identifier=info.get("reverse_domain_identifier"), version=info["version"])
+
+    approx_pkgs_size_kb = approx_size_kb(info, "pkgs")
+    if approx_pkgs_size_kb <= 0:
+        return pkg
+
+    # We need to patch the estimated install size because it's initially
+    # set to the sum of the compressed tarballs, which is not representative
+    try:
+        # expand to apply patches
+        check_call(["pkgutil", "--expand", pkg, f"{pkg}.expanded"])
+        payload_xml = os.path.join(f"{pkg}.expanded", "PackageInfo")
+        tree = ET.parse(payload_xml)
+        root = tree.getroot()
+        payload = root.find("payload")
+        payload.set("installKBytes", str(approx_pkgs_size_kb))
+        tree.write(payload_xml)
+        # repack
+        check_call(["pkgutil", "--flatten", f"{pkg}.expanded", pkg])
+        return pkg
+    finally:
+        shutil.rmtree(f"{pkg}.expanded")
+
+
 def pkgbuild_script(name, info, src, dst='postinstall'):
     fresh_dir(SCRIPTS_DIR)
     fresh_dir(PACKAGE_ROOT)
@@ -304,7 +331,7 @@ def create(info, verbose=False):
     move_script(join(OSX_DIR, 'preinstall.sh'), join(SCRIPTS_DIR, 'preinstall'), info)
     # This script performs the full installation
     move_script(join(OSX_DIR, 'post_extract.sh'), join(SCRIPTS_DIR, 'postinstall'), info)
-    pkgbuild('main')
+    pkgbuild_main(info)
     names = ['main']
 
     # The next three packages contain nothing but scripts to execute a
