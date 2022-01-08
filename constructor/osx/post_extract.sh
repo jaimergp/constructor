@@ -63,6 +63,15 @@ fi
 # install location, the permissions will default to root unless this is done.
 chown -R $USER "$PREFIX"
 
-echo "installation finished."
+
+if [ -n '__SHORTCUTS__' ]; then
+    msg="Done! Shortcuts should be available under ~/Applications."
+    msg+=" Installation contents are available in $PREFIX."
+    notify "${msg}"
+else
+    notify "Done! Installation is available in $PREFIX."
+fi
+
+echo "installation to $PREFIX finished."
 
 exit 0
