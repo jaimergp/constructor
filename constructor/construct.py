@@ -258,6 +258,19 @@ the installation prefix for all users installation will be
 `${ALLUSERSPROFILE}\${NAME}`. Windows only.
 '''),
 
+    ('default_location_pkg', False, str, '''
+Default installation subdirectory in the chosen volume. In PKG installers,
+default installation locations are configured differently. The user can choose
+between a "Just me" installation (which would result in `~/<NAME>`) or another
+volume (which defaults to `<VOLUME>/<NAME>`). If you want a different default,
+you can add a middle component with this option, let's call it `location`. It would
+result in these default values: `~/<LOCATION>/<NAME>` for "Just me",
+`<VOLUME>/<LOCATION>/<NAME>` for custom volumes. For example, setting this option
+to `/Library` in a "Just me" installation will give you `~/Library/<NAME>`.
+Internally, this is passed to `pkgbuild --install-location`.
+macOS only.
+'''),
+
     ('welcome_image',          False, str, '''
 Path to an image in any common image format (`.png`, `.jpg`, `.tif`, etc.)
 to be used as the welcome image for the Windows and PKG installers.

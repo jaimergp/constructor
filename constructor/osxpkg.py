@@ -249,18 +249,23 @@ def fresh_dir(dir_path):
     os.mkdir(dir_path)
 
 
-def pkgbuild(name, identifier=None, version=None):
+def pkgbuild(name, identifier=None, version=None, install_location=None):
+    "see `man pkgbuild` for the meaning of optional arguments"
     if identifier is None:
         identifier = "io.continuum"
     args = [
-        "pkgbuild", "--root", PACKAGE_ROOT,
+        "pkgbuild",
+        "--root", PACKAGE_ROOT,
         "--identifier", "%s.pkg.%s" % (identifier, name),
         "--ownership", "preserve",
+
     ]
     if isdir(SCRIPTS_DIR) and os.listdir(SCRIPTS_DIR):
         args += ["--scripts", SCRIPTS_DIR]
     if version:
         args += ["--version", version]
+    if install_location is not None:
+        args += ["--install-location", install_location]
     output = os.path.join(PACKAGES_DIR, f"{name}.pkg")
     args += [output]
     check_call(args)
@@ -268,7 +273,12 @@ def pkgbuild(name, identifier=None, version=None):
 
 
 def pkgbuild_main(info):
-    pkg = pkgbuild("main", identifier=info.get("reverse_domain_identifier"), version=info["version"])
+    pkg = pkgbuild(
+        "main",
+        identifier=info.get("reverse_domain_identifier"),
+        version=info["version"],
+        install_location=info.get("default_location_pkg"),
+    )
 
     approx_pkgs_size_kb = approx_size_kb(info, "pkgs")
     if approx_pkgs_size_kb <= 0:
