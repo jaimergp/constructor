@@ -183,7 +183,8 @@ as `sh` on Linux and `exe` on Windows.
 _required:_ no<br/>
 _type:_ string<br/>
 Path to the license file being displayed by the installer during the install
-process.
+process. It must be plain text (.txt) for shell-based installers. On PKG,
+.txt, .rtf and .html are supported. On Windows, .txt and .rtf are supported.
 
 ## `keep_pkgs`
 
@@ -421,7 +422,7 @@ _required:_ no<br/>
 _type:_ string<br/>
 If `installer_type` is `pkg` on MacOS, this message will be
 shown before the license information, right after the introduction.
-It accepts path to a plain text file or a rich text file (rtf). If
+File can be plain text (.txt), rich text (.rtf) or HTML (.html). If
 both `welcome_file` and `welcome_text` are provided, `welcome_file` takes precedence.
 (MacOS only).
 
@@ -442,7 +443,7 @@ _required:_ no<br/>
 _type:_ string<br/>
 If `installer_type` is `pkg` on MacOS, this message will be
 shown before the license information, right after the welcome screen.
-It accepts path to a plain text file or a rich text file (rtf). If
+File can be plain text (.txt), rich text (.rtf) or HTML (.html). If
 both `readme_file` and `readme_text` are provided, `readme_file` takes precedence.
 (MacOS only).
 
@@ -461,10 +462,10 @@ You can disable it altogether if you set this key to `""` (empty string).
 _required:_ no<br/>
 _type:_ string<br/>
 If `installer_type` is `pkg` on MacOS, this message will be
-shown at the end of the installer upon success. It accepts path to
-a plain text file or a rich text file (rtf). If both `conclusion_file`
-and `conclusion_text` are provided, `conclusion_file` takes precedence.
- (MacOS only).
+shown at the end of the installer upon success. File can be
+plain text (.txt), rich text (.rtf) or HTML (.html). If both
+`conclusion_file` and `conclusion_text` are provided,
+`conclusion_file` takes precedence. (MacOS only).
 
 ## `conclusion_text`
 

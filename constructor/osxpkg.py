@@ -35,6 +35,16 @@ def write_readme(dst, info):
         f.write('}')
 
 
+def _detect_mimetype(path: str):
+    extension = Path(path).suffix.lower().strip(".")
+    if extension == "rtf":
+        return "richtext/rtf"
+    if extension in ("html", "htm"):
+        return "text/html"
+    # we assume it's plain text
+    return "text/plain"
+
+
 def modify_xml(xml_path, info):
     # See
     # http://developer.apple.com/library/mac/#documentation/DeveloperTools/Reference/DistributionDefinitionRef/Chapters/Distribution_XML_Ref.html#//apple_ref/doc/uid/TP40005370-CH100-SW20
@@ -82,74 +92,60 @@ def modify_xml(xml_path, info):
     ### WELCOME ###
     if "welcome_file" in info:
         welcome_path = info["welcome_file"]
-        extension = Path(welcome_path).suffix
-        if extension.lower() == ".rtf":
-            mimetype = "richtext/rtf"
-        else:  # we assume it's plain text
-            mimetype = "text/plain"
     elif "welcome_text" in info and info["welcome_text"]:
         welcome_path = join(PACKAGES_DIR, "welcome.txt")
-        mimetype = "text/plain"
         with open(welcome_path, "w") as f:
             f.write(info["welcome_text"])
     else:
         welcome_path = None
 
     if welcome_path:
-        welcome = ET.Element('welcome', file=welcome_path,
-                             attrib={'mime-type': mimetype})
+        welcome = ET.Element(
+            'welcome', file=welcome_path,
+            attrib={'mime-type': _detect_mimetype(welcome_path)}
+        )
         root.append(welcome)
 
     ### CONCLUSION ###
     if "conclusion_file" in info:
         conclusion_path = info["conclusion_file"]
-        extension = Path(conclusion_path).suffix
-        if extension.lower() == ".rtf":
-            mimetype = "richtext/rtf"
-        else:  # we assume it's plain text
-            mimetype = "text/plain"
     elif "conclusion_text" in info:
         if not info["conclusion_text"]:
             conclusion_path = None
         else:
             conclusion_path = join(PACKAGES_DIR, "conclusion.txt")
-            mimetype = "text/plain"
             with open(conclusion_path, "w") as f:
                 f.write(info["conclusion_text"])
     else:
         conclusion_path = join(OSX_DIR, 'acloud.rtf')
-        mimetype = 'richtext/rtf'
 
     if conclusion_path:
-        conclusion = ET.Element('conclusion', file=conclusion_path,
-                                attrib={'mime-type': mimetype})
+        conclusion = ET.Element(
+            'conclusion', file=conclusion_path,
+            attrib={'mime-type': _detect_mimetype(conclusion_path)}
+        )
         root.append(conclusion)
     # when not provided, conclusion defaults to a system message
 
     ### README ###
     if "readme_file" in info:
         readme_path = info["readme_file"]
-        extension = Path(readme_path).suffix
-        if extension.lower() == ".rtf":
-            mimetype = "richtext/rtf"
-        else:  # we assume it's plain text
-            mimetype = "text/plain"
     elif "readme_text" in info:
         if not info["readme_text"]:
             readme_path = None
         else:
             readme_path = join(PACKAGES_DIR, "readme.txt")
-            mimetype = "text/plain"
             with open(readme_path, "w") as f:
                 f.write(info["readme_text"])
     else:
-        mimetype = "richtext/rtf"
         readme_path = join(PACKAGES_DIR, "readme.rtf")
         write_readme(readme_path, info)
 
     if readme_path:
-        readme = ET.Element('readme', file=readme_path,
-                            attrib={'mime-type': mimetype})
+        readme = ET.Element(
+            'readme', file=readme_path,
+            attrib={'mime-type': _detect_mimetype(readme_path)}
+        )
         root.append(readme)
 
     # See below for an explanation of the consequences of this
