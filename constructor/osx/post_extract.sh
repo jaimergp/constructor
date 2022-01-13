@@ -4,7 +4,7 @@
 
 notify() {
 osascript <<EOF
-display notification "$1" with title "Install __NAME__"
+display notification "$1" with title "📦 Install __NAME__"
 EOF
 }
 
@@ -65,9 +65,7 @@ chown -R $USER "$PREFIX"
 
 
 if [ -n '__SHORTCUTS__' ]; then
-    msg="Done! Shortcuts should be available under ~/Applications."
-    msg+=" Installation contents are available in $PREFIX."
-    notify "${msg}"
+    notify "Done! You can open __NAME__ via ~/Applications."
 else
     notify "Done! Installation is available in $PREFIX."
 fi
