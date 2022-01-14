@@ -167,6 +167,13 @@ to have a certificate (usually an "Installer certificate") and corresponding
 private key together called an 'identity' in one of your accessible keychains.
 '''),
 
+    ('notarization_identity_name', False, str, '''
+If the pkg installer is going to be signed with `signing_identity_name`, you
+can also prepare the bundle for notarization by setting this key to True.
+This will use `codesign` to sign conda.exe. For this, you need an "Application
+certificate" (different from the "Installer certificate" mentioned above).
+'''),
+
     ('signing_certificate',  False, str, '''
 On Windows only, set this key to the path of a PFX certificate to be used with
 `signtool`. Additional environment variables can be used to configure the step,

@@ -4,6 +4,8 @@ from os.path import isdir, abspath, dirname, exists, join
 from subprocess import check_call
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from plistlib import dump as plist_dump
+from tempfile import NamedTemporaryFile
 
 import constructor.preconda as preconda
 from constructor.imaging import write_images
@@ -321,6 +323,7 @@ def create(info, verbose=False):
     fresh_dir(PACKAGES_DIR)
     prefix = join(PACKAGE_ROOT, info['name'].lower())
 
+
     # See http://stackoverflow.com/a/11487658/161801 for how all this works.
 
     # The main package contains the prepopulated package cache, the modified
@@ -333,6 +336,30 @@ def create(info, verbose=False):
     for dist in info['_dists']:
         os.link(join(CACHE_DIR, dist), join(pkgs_dir, dist))
     shutil.copyfile(info['_conda_exe'], join(prefix, "_conda.exe"))
+    notarization_identity_name = info.get('notarization_identity_name')
+    if notarization_identity_name:
+        with NamedTemporaryFile(suffix=".plist", delete=False) as f:
+            plist = {
+                "com.apple.security.cs.allow-jit": True,
+                "com.apple.security.cs.allow-unsigned-executable-memory": True,
+                "com.apple.security.cs.disable-executable-page-protection": True,
+                "com.apple.security.cs.disable-library-validation": True,
+                "com.apple.security.cs.allow-dyld-environment-variables": True,
+            }
+            plist_dump(plist, f)
+        check_call(
+            [
+                'codesign',
+                "--verbose",
+                '--sign', notarization_identity_name,
+                "--prefix", info.get("reverse_domain_identifier", info['name']),
+                "--options", "runtime",
+                "--force",
+                "--entitlements", f.name,
+                join(prefix, "_conda.exe"),
+            ]
+        )
+        os.unlink(f.name)
     # This script checks to see if the install location already exists
     move_script(join(OSX_DIR, 'preinstall.sh'), join(SCRIPTS_DIR, 'preinstall'), info)
     # This script performs the full installation

@@ -213,6 +213,15 @@ using this option, it will be used to sign the installer. Note that you will nee
 to have a certificate (usually an "Installer certificate") and corresponding
 private key together called an 'identity' in one of your accessible keychains.
 
+## `notarization_identity_name`
+
+_required:_ no<br/>
+_type:_ string<br/>
+If the pkg installer is going to be signed with `signing_identity_name`, you
+can also prepare the bundle for notarization by setting this key to True.
+This will use `codesign` to sign conda.exe. For this, you need an "Application
+certificate" (different from the "Installer certificate" mentioned above).
+
 ## `signing_certificate`
 
 _required:_ no<br/>
