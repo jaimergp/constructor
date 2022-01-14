@@ -7,14 +7,14 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from os.path import basename, dirname, getsize, isdir, join
+from os.path import basename, dirname, getsize, isdir, join, relpath
 import shutil
 import stat
 import tarfile
 import tempfile
 
 from .construct import ns_platform
-from .preconda import files as preconda_files, write_files as preconda_write_files
+from .preconda import write_files as preconda_write_files, copy_extra_files
 from .utils import add_condarc, filename_dist, fill_template, md5_files, preprocess, \
     read_ascii_only, get_final_channels
 
@@ -95,8 +95,7 @@ def create(info, verbose=False):
     except Exception:
         pass
     tmp_dir = tempfile.mkdtemp(dir=tmp_dir_base_path)
-    preconda_write_files(info, tmp_dir)
-
+    preconda_files, extra_files = preconda_write_files(info, tmp_dir)
     preconda_tarball = join(tmp_dir, 'preconda.tar.bz2')
     postconda_tarball = join(tmp_dir, 'postconda.tar.bz2')
     pre_t = tarfile.open(preconda_tarball, 'w:bz2')
@@ -124,6 +123,11 @@ def create(info, verbose=False):
         pre_t.add(record_file_src, record_file_dest)
     pre_t.addfile(tarinfo=tarfile.TarInfo("conda-meta/history"))
     post_t.add(join(tmp_dir, 'conda-meta', 'history'), 'conda-meta/history')
+
+    extra_files = copy_extra_files(info, tmp_dir)
+    for path in extra_files:
+        post_t.add(path, relpath(path, tmp_dir))
+
     pre_t.close()
     post_t.close()
 

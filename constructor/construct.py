@@ -381,6 +381,15 @@ it defaults to a message about Anaconda Cloud. You can disable it altogether
 so it defaults to the system message if you set this key to `""` (empty string).
 (MacOS only).
 '''),
+
+    ('extra_files', False, (list, dict), '''
+Extra, non-packaged files, that should be added to the installer. This setting
+can be passed as:
+
+- `List[str]`: each found file will be copied to the root prefix
+- `Mapping[str, str]`: map of path in disk to path in prefix. (not implemented)
+
+''')
 ]
 
 

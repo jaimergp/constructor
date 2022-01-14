@@ -15,7 +15,7 @@ import tempfile
 
 from .construct import ns_platform
 from .imaging import write_images
-from .preconda import write_files as preconda_write_files
+from .preconda import copy_extra_files, write_files as preconda_write_files
 from .utils import (approx_size_kb, filename_dist, fill_template, make_VIProductVersion,
                     preprocess, add_condarc, get_final_channels)
 
@@ -181,6 +181,7 @@ def create(info, verbose=False):
     verify_nsis_install()
     tmp_dir = tempfile.mkdtemp()
     preconda_write_files(info, tmp_dir)
+    copy_extra_files(info, tmp_dir)
     shutil.copyfile(info['_conda_exe'], join(tmp_dir, '_conda.exe'))
 
     if 'pre_install' in info:
