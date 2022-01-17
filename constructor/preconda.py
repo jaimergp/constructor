@@ -184,7 +184,7 @@ def write_env_txt(info, dst_dir):
 def copy_extra_files(info, workdir):
     extra_files = info.get('extra_files')
     if not extra_files:
-        return
+        return []
     copied = []
     if hasattr(extra_files, 'items'):
         for origin, destination in extra_files.items():
