@@ -150,6 +150,8 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
     total_tarball_size = 52428800
     total_extracted_pkgs_size = 52428800
 
+    licenses = defaultdict(dict)
+
     for pc_rec in pc_recs:
         fn = pc_rec.fn
         extracted_package_dir = pc_rec.extracted_package_dir
@@ -171,6 +173,14 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
             short_path_lower = short_path.lower()
             map_members_icase[short_path_lower]['files'].add(short_path)
             map_members_icase[short_path_lower]['fns'].add(fn)
+
+        licenses_dir = os.path.join(extracted_package_dir, "info", "licenses")
+        license_files = []
+        if os.path.isdir(licenses_dir):
+            for directory, _, files in os.walk(licenses_dir):
+                for filepath in files:
+                    license_files.append(os.path.join(directory, filepath))
+        licenses[pc_rec.dist_str()][pc_rec.license] = license_files
 
     for member in map_members_scase:
         fns = map_members_scase[member]
@@ -195,7 +205,7 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
             else:
                 sys.exit('Error: {}'.format(msg_str))
 
-    return total_tarball_size, total_extracted_pkgs_size
+    return total_tarball_size, total_extracted_pkgs_size, licenses
 
 
 def _precs_from_environment(environment, download_dir, user_conda):
@@ -308,7 +318,7 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
         _show(name, version, platform, download_dir, precs, more_recent_versions)
 
     if dry_run:
-        return None, None, None, None
+        return None, None, None, None, None
 
     pc_recs = _fetch(download_dir, precs)
     # Constructor cache directory can have multiple packages from different
@@ -319,7 +329,7 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
     _urls = [(pc_rec.url, pc_rec.md5) for pc_rec in pc_recs]
     has_conda = any(pc_rec.name == 'conda' for pc_rec in pc_recs)
 
-    approx_tarballs_size, approx_pkgs_size = check_duplicates_files(
+    approx_tarballs_size, approx_pkgs_size, licenses = check_duplicates_files(
         pc_recs, platform, ignore_duplicate_files
     )
 
@@ -349,7 +359,7 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
         import shutil
 
         shutil.rmtree(environment)
-    return _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda
+    return _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda, licenses
 
 
 def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
@@ -384,7 +394,7 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
         conda_context.proxy_servers = proxy_servers
         conda_context.ssl_verify = ssl_verify
 
-        _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda = _main(
+        _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda, licenses = _main(
             name, version, download_dir, platform, channel_urls, channels_remap, specs,
             exclude, menu_packages, ignore_duplicate_files, environment, environment_file,
             verbose, dry_run, conda_exe, transmute_file_type
@@ -395,3 +405,4 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
     info["_approx_tarballs_size"] = approx_tarballs_size
     info["_approx_pkgs_size"] = approx_pkgs_size
     info["_has_conda"] = has_conda
+    info["_licenses"] = licenses
