@@ -109,6 +109,13 @@ def main_build(dir_path, output_dir='.', platform=cc_platform,
             if any((not s) for s in info[key]):
                 sys.exit("Error: found empty element in '%s:'" % key)
 
+    if "extra_envs" in info:
+        for env_name, env_config in info["extra_envs"].items():
+            if env_name in ("base", "root"):
+                raise ValueError(f"Environment name '{env_name}' cannot be used")
+            for config_key, values in env_config.items():
+                env_config[config_key] = [value.strip() for value in values]
+
     info['installer_type'] = itypes[0]
     fcp_main(info, verbose=verbose, dry_run=dry_run, conda_exe=conda_exe)
     if dry_run:

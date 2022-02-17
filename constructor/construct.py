@@ -73,10 +73,9 @@ is contained as a result of resolving the specs for `python 2.7`.
 '''),
 
     ('menu_packages',           False, list, '''
-A list of packages with menu items to be instsalled. The packages must have
-necessary metadata in "Menu/<package name>.json").  Menu items are currently
-only supported on Windows. By default, all menu items will be installed;
-supplying this list allows a subset to be selected instead.
+A list of packages with menu items to be installed. The packages must have
+necessary metadata in "Menu/<package name>.json"). By default, all menu items
+will be installed;supplying this list allows a subset to be selected instead.
 '''),
 
     ('ignore_duplicate_files',  False, bool, '''
@@ -389,6 +388,21 @@ can be passed as:
 - `List[str]`: each found file will be copied to the root prefix
 - `Mapping[str, str]`: map of path in disk to path in prefix. (not implemented)
 
+'''),
+
+    ('extra_envs', False, (dict,), '''
+Create more environments, in addition to the default `base` provided by `specs`,
+`environment` or `environment_file`. This should be a map of `str` (environment
+name) to a dictionary of options:
+
+- `specs` (list of str): which packages to install in that environment
+- `channels` (list of str): using these channels
+- `user_requested_specs` (list of str): same as the global option, but for this env
+  (not implemented)
+- `exclude` (list of str): same as the global option, but for this env
+  (not implemented)
+- `menu_packages` (list of str): same as the global option, but for this env
+  (not implemented)
 ''')
 ]
 
