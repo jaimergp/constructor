@@ -42,12 +42,61 @@ def pkg_commands(download_dir, dists):
         yield 'File %s' % str_esc(join(download_dir, fn))
 
 
+def setup_envs_commands(info, dir_path):
+    template = """
+        # Set up {name} env
+
+        SetOutPath "{env_txt_dir}"
+        File {env_txt_abspath}
+        SetDetailsPrint TextOnly
+        DetailPrint "Setting up the {name} environment ..."
+        nsExec::ExecToLog '"$INSTDIR\_conda.exe" install --offline -yp "{prefix}" --file "{env_txt}" @SHORTCUTS@'
+        Pop $0
+        SetDetailsPrint both
+
+        # Cleanup {name} env.txt
+        SetOutPath "$INSTDIR"
+        Delete "{env_txt}"
+
+        # Restore shipped conda-meta\history for remapped
+        # channels and retain only the first transaction
+        SetOutPath "{conda_meta}"
+        File {history_abspath}
+        """
+
+    lines = template.format(
+        name="base",
+        prefix=r"$INSTDIR",
+        env_txt=r"$INSTDIR\pkgs\env.txt",  # env.txt as seen by the running installer
+        env_txt_dir=r"$INSTDIR\pkgs",  # env.txt location in the installer filesystem
+        env_txt_abspath=join(dir_path, "env.txt"), # env.txt location while building the installer
+        conda_meta=r"$INSTDIR\conda-meta",
+        history_abspath=join(dir_path, "conda-meta", "history")
+    ).splitlines()
+    for env_name in info.get("_extra_envs_info", {}):
+        lines += ["", ""]
+        lines += template.format(
+            name=env_name,
+            prefix=join("$INSTDIR", "envs", env_name),
+            env_txt=join("$INSTDIR", "pkgs", "envs", env_name, "env.txt"),
+            env_txt_dir=join("$INSTDIR", "pkgs", "envs", env_name),
+            env_txt_abspath=join(dir_path, "pkgs", "envs", env_name, "env.txt"),
+            conda_meta=join("$INSTDIR", "envs", env_name, "conda-meta"),
+            history_abspath=join(dir_path, "pkgs", "envs", env_name, "conda-meta", "history")
+        ).splitlines()
+
+    return [line.strip() for line in lines]
+
+
 def make_nsi(info, dir_path):
     "Creates the tmp/main.nsi from the template file"
     name = info['name']
     download_dir = info['_download_dir']
     dists = info['_dists']
-    # TODO: extra_envs
+    for env_info in info["_extra_envs_info"].values():
+        dists += env_info["_dists"]
+    dists = list({dist: None for dist in dists})  # de-duplicate
+
     py_name, py_version, unused_build = filename_dist(dists[0]).rsplit('-', 2)
     assert py_name == 'python'
     arch = int(info['_platform'].split('-')[1])
@@ -76,9 +125,7 @@ def make_nsi(info, dir_path):
         'HEADERIMAGE': '@header.bmp',
         'WELCOMEIMAGE': '@welcome.bmp',
         'LICENSEFILE': abspath(info.get('license_file', join(NSIS_DIR, 'placeholder_license.txt'))),
-        'CONDA_HISTORY': '@' + join('conda-meta', 'history'),
         'CONDA_EXE': '@_conda.exe',
-        'ENV_TXT': '@env.txt',
         'URLS_FILE': '@urls',
         'URLS_TXT_FILE': '@urls.txt',
         'POST_INSTALL': '@post_install.bat',
@@ -130,6 +177,7 @@ def make_nsi(info, dir_path):
         ('@NSIS_DIR@', NSIS_DIR),
         ('@BITS@', str(arch)),
         ('@PKG_COMMANDS@', '\n    '.join(pkg_commands(download_dir, dists))),
+        ('@SETUP_ENVS@', '\n    '.join(setup_envs_commands(info))),
         ('@WRITE_CONDARC@', '\n    '.join(add_condarc(info))),
         ('@SHORTCUTS@', shortcuts),
         ('@SIZE@', str(approx_pkgs_size_kb)),

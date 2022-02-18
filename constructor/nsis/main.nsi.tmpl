@@ -820,7 +820,6 @@ Section "Install"
     ${EndIf}
 
     SetOutPath "$INSTDIR\pkgs"
-    File __ENV_TXT__
     File __URLS_FILE__
     File __URLS_TXT_FILE__
     File __POST_INSTALL__
@@ -841,26 +840,11 @@ Section "Install"
     Pop $0
     SetDetailsPrint both
 
-    SetDetailsPrint TextOnly
-    DetailPrint "Setting up the base environment ..."
-    nsExec::ExecToLog '"$INSTDIR\_conda.exe" install --offline -yp "$INSTDIR" --file "$INSTDIR\pkgs\env.txt" @SHORTCUTS@'
-    Pop $0
-    SetDetailsPrint both
-
-    # Cleanup
-    SetOutPath "$INSTDIR"
-    Delete "$INSTDIR\pkgs\env.txt"
-
-    # TODO: extra_envs
+    @SETUP_ENVS@
 
     @WRITE_CONDARC@
 
     AddSize @SIZE@
-
-    # Restore shipped conda-meta\history for remapped
-    # channels and retain only the first transaction
-    SetOutPath "$INSTDIR\conda-meta"
-    File __CONDA_HISTORY__
 
     push '"$INSTDIR\pythonw.exe" -E -s "$INSTDIR\Lib\_nsis.py" mkdirs'
     push 'Failed to initialize Anaconda directories'
