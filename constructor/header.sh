@@ -510,6 +510,8 @@ export TMP="$TMP_BACKUP"
 mkdir -p $PREFIX/envs
 #endif
 
+# TODO: extra_envs
+
 #The templating doesn't support nested if statements
 #if has_post_install
 if [ "$SKIP_SCRIPTS" = "1" ]; then

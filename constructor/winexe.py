@@ -47,6 +47,7 @@ def make_nsi(info, dir_path):
     name = info['name']
     download_dir = info['_download_dir']
     dists = info['_dists']
+    # TODO: extra_envs
     py_name, py_version, unused_build = filename_dist(dists[0]).rsplit('-', 2)
     assert py_name == 'python'
     arch = int(info['_platform'].split('-')[1])

@@ -51,6 +51,8 @@ mv "$PREFIX/pkgs/conda-meta/history" "$PREFIX/conda-meta/history"
 rm -f "$PREFIX/env.txt"
 find "$PREFIX/pkgs" -type d -empty -exec rmdir {} \; 2>/dev/null || :
 
+# TODO: extra_envs
+
 __WRITE_CONDARC__
 
 "$PREFIX/bin/python" -V

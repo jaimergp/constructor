@@ -42,6 +42,7 @@ def write_index_cache(info, dst_dir, used_packages):
     repodatas = {url: get_repodata(url) for url in _urls if url is not None}
 
     for url, _ in info['_urls']:
+        # TODO: extra_envs
         src, subdir, fn = url.rsplit('/', 2)
         dst = _remaps.get(src)
         if dst is not None:
@@ -100,6 +101,7 @@ def write_files(info, dst_dir):
     with open(join(dst_dir, '.constructor-build.info'), 'w') as fo:
         json.dump(system_info(), fo)
 
+    # TODO: extra_envs
     final_urls_md5s = tuple((get_final_url(info, url), md5) for url, md5 in info['_urls'])
 
     with open(join(dst_dir, 'urls'), 'w') as fo:
@@ -110,6 +112,7 @@ def write_files(info, dst_dir):
         for url, _ in final_urls_md5s:
             fo.write('%s\n' % url)
 
+    # TODO: extra_envs
     write_index_cache(info, dst_dir, info['_dists'])
 
     write_conda_meta(info, dst_dir, final_urls_md5s)
@@ -146,6 +149,7 @@ def write_conda_meta(info, dst_dir, final_urls_md5s):
 
 
 def write_repodata_record(info, dst_dir):
+    # TODO: extra_envs
     for dist in info['_dists']:
         if filename_dist(dist).endswith(".conda"):
             _dist = filename_dist(dist)[:-6]
@@ -170,6 +174,7 @@ def write_repodata_record(info, dst_dir):
 
 
 def write_env_txt(info, dst_dir):
+    # TODO: extra_envs
     dists_san_extn = []
     for dist in info['_dists']:
         if filename_dist(dist).endswith('.conda'):

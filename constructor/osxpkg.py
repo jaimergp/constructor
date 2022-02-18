@@ -35,6 +35,7 @@ def write_readme(dst, info):
             f.write("{\\listtext\t\n\\f1 \\uc0\\u8259 \n\\f0 \t}%s %s\\\n" %
                     tuple(dist.rsplit('-', 2)[:2]))
         f.write('}')
+        # TODO: list extra_envs
 
 
 def _detect_mimetype(path: str):
@@ -336,6 +337,7 @@ def create(info, verbose=False):
     preconda.copy_extra_files(info, prefix)
     for dist in info['_dists']:
         os.link(join(CACHE_DIR, dist), join(pkgs_dir, dist))
+    # TODO: extra_envs
     shutil.copyfile(info['_conda_exe'], join(prefix, "_conda.exe"))
     notarization_identity_name = info.get('notarization_identity_name')
     if notarization_identity_name:

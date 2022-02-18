@@ -851,6 +851,8 @@ Section "Install"
     SetOutPath "$INSTDIR"
     Delete "$INSTDIR\pkgs\env.txt"
 
+    # TODO: extra_envs
+
     @WRITE_CONDARC@
 
     AddSize @SIZE@

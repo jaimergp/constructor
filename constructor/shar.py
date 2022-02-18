@@ -113,6 +113,7 @@ def create(info, verbose=False):
             if cf.endswith(".json"):
                 pre_t.add(join(cache_dir, cf), 'pkgs/cache/' + cf)
     for dist in info['_dists']:
+        # TODO: extra_envs
         if filename_dist(dist).endswith(".conda"):
             _dist = filename_dist(dist)[:-6]
         elif filename_dist(dist).endswith(".tar.bz2"):
@@ -138,6 +139,7 @@ def create(info, verbose=False):
     if 'license_file' in info:
         t.add(info['license_file'], 'LICENSE.txt')
     for dist in info['_dists']:
+        # TODO: extra_envs
         fn = filename_dist(dist)
         t.add(join(info['_download_dir'], fn), 'pkgs/' + fn)
     t.close()
