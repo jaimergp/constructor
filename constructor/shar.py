@@ -103,6 +103,10 @@ def create(info, verbose=False):
     for dist in preconda_files:
         fn = filename_dist(dist)
         pre_t.add(join(tmp_dir, fn), 'pkgs/' + fn)
+    for env_name in info.get("extra_envs", {}):
+        pre_t.add(join(tmp_dir, "envs", env_name, "env.txt"),
+                  f"pkgs/envs/{env_name}/env.txt")
+
     for key in 'pre_install', 'post_install':
         if key in info:
             pre_t.add(info[key], 'pkgs/%s.sh' % key,
@@ -112,8 +116,11 @@ def create(info, verbose=False):
         for cf in os.listdir(cache_dir):
             if cf.endswith(".json"):
                 pre_t.add(join(cache_dir, cf), 'pkgs/cache/' + cf)
-    for dist in info['_dists']:
-        # TODO: extra_envs
+
+    all_dists = info["_dists"].copy()
+    for env_data in info.get("extra_envs", {}).values():
+        all_dists += env_data["_dists"]
+    for dist in all_dists:
         if filename_dist(dist).endswith(".conda"):
             _dist = filename_dist(dist)[:-6]
         elif filename_dist(dist).endswith(".tar.bz2"):
@@ -124,6 +131,10 @@ def create(info, verbose=False):
         pre_t.add(record_file_src, record_file_dest)
     pre_t.addfile(tarinfo=tarfile.TarInfo("conda-meta/history"))
     post_t.add(join(tmp_dir, 'conda-meta', 'history'), 'conda-meta/history')
+    for env_name in info.get("extra_envs", {}):
+        pre_t.addfile(tarinfo=tarfile.TarInfo(f"envs/{env_name}/conda-meta/history"))
+        post_t.add(join(tmp_dir, 'envs', env_name, 'conda-meta', 'history'),
+                   f"envs/{env_name}/conda-meta/history")
 
     extra_files = copy_extra_files(info, tmp_dir)
     for path in extra_files:
@@ -138,8 +149,7 @@ def create(info, verbose=False):
     t.add(postconda_tarball, basename(postconda_tarball))
     if 'license_file' in info:
         t.add(info['license_file'], 'LICENSE.txt')
-    for dist in info['_dists']:
-        # TODO: extra_envs
+    for dist in all_dists:
         fn = filename_dist(dist)
         t.add(join(info['_download_dir'], fn), 'pkgs/' + fn)
     t.close()

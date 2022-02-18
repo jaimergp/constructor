@@ -487,12 +487,23 @@ CONDA_CHANNELS=__CHANNELS__ \
 CONDA_PKGS_DIRS="$PREFIX/pkgs" \
 "$CONDA_EXEC" install --offline --file "$PREFIX/pkgs/env.txt" -yp "$PREFIX" __SHORTCUTS__ || exit 1
 
-if [ "$KEEP_PKGS" = "0" ]; then
-    rm -fr $PREFIX/pkgs/*.tar.bz2
-    rm -fr $PREFIX/pkgs/*.conda
-fi
-
 __INSTALL_COMMANDS__
+
+#if has_conda
+mkdir -p $PREFIX/envs
+
+for env_pkgs in ${PREFIX}/pkgs/envs/*/; do
+    env_name=$(basename ${env_pkgs})
+    mkdir -p "$PREFIX/envs/$env_name"
+    # TODO: custom channels per env?
+    # TODO: custom shortcuts per env?
+    CONDA_SAFETY_CHECKS=disabled \
+    CONDA_EXTRA_SAFETY_CHECKS=no \
+    CONDA_CHANNELS=__CHANNELS__ \
+    CONDA_PKGS_DIRS="$PREFIX/pkgs" \
+    "$CONDA_EXEC" install --offline --file "$env_pkgs/env.txt" -yp "$PREFIX/envs/$env_name" __SHORTCUTS__ || exit 1
+#endif
+
 
 POSTCONDA="$PREFIX/postconda.tar.bz2"
 "$CONDA_EXEC" constructor --prefix "$PREFIX" --extract-tarball < "$POSTCONDA" || exit 1
@@ -505,12 +516,6 @@ rm -f $PREFIX/pkgs/env.txt
 
 rm -rf $PREFIX/install_tmp
 export TMP="$TMP_BACKUP"
-
-#if has_conda
-mkdir -p $PREFIX/envs
-#endif
-
-# TODO: extra_envs
 
 #The templating doesn't support nested if statements
 #if has_post_install
