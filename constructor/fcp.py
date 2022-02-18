@@ -452,10 +452,11 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
             verbose, dry_run, conda_exe, transmute_file_type, extra_envs
         )
 
-    info["_urls"] = _urls
-    info["_dists"] = dists
-    info["_extra_envs_data"] = extra_envs_data
+    info["_urls"] = _urls  # needed to mock the repodata cache
+    info["_dists"] = dists  # needed to tell conda what to install
     info["_approx_tarballs_size"] = approx_tarballs_size
     info["_approx_pkgs_size"] = approx_pkgs_size
     info["_has_conda"] = has_conda
     info["_licenses"] = licenses
+    # contains env_name: [_dists, _urls] for each extra environment
+    info["_extra_envs_data"] = extra_envs_data

@@ -41,8 +41,11 @@ def write_index_cache(info, dst_dir, used_packages):
                              info.get('conda_default_channels', []))
     repodatas = {url: get_repodata(url) for url in _urls if url is not None}
 
-    for url, _ in info['_urls']:
-        # TODO: extra_envs
+    all_urls = info["_urls"].copy()
+    for env_data in info.get("extra_envs", {}).values():
+        all_urls += env_data["_urls"]
+
+    for url, _ in all_urls:
         src, subdir, fn = url.rsplit('/', 2)
         dst = _remaps.get(src)
         if dst is not None:
@@ -101,31 +104,51 @@ def write_files(info, dst_dir):
     with open(join(dst_dir, '.constructor-build.info'), 'w') as fo:
         json.dump(system_info(), fo)
 
-    # TODO: extra_envs
-    final_urls_md5s = tuple((get_final_url(info, url), md5) for url, md5 in info['_urls'])
+    all_urls = info["_urls"].copy()
+    for env_data in info.get("extra_envs", {}).values():
+        all_urls += env_data["_urls"]
+
+    final_urls_md5s = tuple((get_final_url(info, url), md5) for url, md5 in info["_urls"])
+    all_final_urls_md5s = tuple((get_final_url(info, url), md5) for url, md5 in all_urls)
 
     with open(join(dst_dir, 'urls'), 'w') as fo:
-        for url, md5 in final_urls_md5s:
+        for url, md5 in all_final_urls_md5s:
             fo.write('%s#%s\n' % (url, md5))
 
     with open(join(dst_dir, 'urls.txt'), 'w') as fo:
-        for url, _ in final_urls_md5s:
+        for url, _ in all_final_urls_md5s:
             fo.write('%s\n' % url)
 
-    # TODO: extra_envs
-    write_index_cache(info, dst_dir, info['_dists'])
+    all_dists = info["_dists"].copy()
+    for env_data in info.get("extra_envs", {}).values():
+        all_dists += env_data["_dists"]
 
+    write_index_cache(info, dst_dir, all_dists)
+
+    # base environment conda-meta
     write_conda_meta(info, dst_dir, final_urls_md5s)
 
     write_repodata_record(info, dst_dir)
 
-    write_env_txt(info, dst_dir)
+    # base environment file used with conda install --file
+    # (list of specs/dists to install)
+    write_env_txt(info, dst_dir, info["_dists"])
     for fn in files:
         os.chmod(join(dst_dir, fn), 0o664)
 
+    for env_name, env_data in info.get("extra_envs", {}).items():
+        env_dst_dir = os.path.join(dst_dir, "envs", env_name)
+        # environment conda-meta
+        env_urls_md5 = tuple((get_final_url(info, url), md5) for url, md5 in env_data["_urls"])
+        user_requested_specs = env_data.get('user_requested_specs', env_data.get('specs', ()))
+        write_conda_meta(info, env_dst_dir, env_urls_md5, user_requested_specs)
+        # environment installation list
+        write_env_txt(info, env_dst_dir, env_data["_dists"])
 
-def write_conda_meta(info, dst_dir, final_urls_md5s):
-    user_requested_specs = info.get('user_requested_specs', info.get('specs', ()))
+
+def write_conda_meta(info, dst_dir, final_urls_md5s, user_requested_specs=None):
+    if user_requested_specs is None:
+        user_requested_specs = info.get('user_requested_specs', info.get('specs', ()))
     cmd = path_split(sys.argv[0])[-1]
     if len(sys.argv) > 1:
         cmd = "%s %s" % (cmd, " ".join(sys.argv[1:]))
@@ -149,8 +172,10 @@ def write_conda_meta(info, dst_dir, final_urls_md5s):
 
 
 def write_repodata_record(info, dst_dir):
-    # TODO: extra_envs
-    for dist in info['_dists']:
+    all_dists = info["_dists"].copy()
+    for env_data in info.get("_extra_envs", {}).values():
+        all_dists += env_data["_dists"]
+    for dist in all_dists:
         if filename_dist(dist).endswith(".conda"):
             _dist = filename_dist(dist)[:-6]
         elif filename_dist(dist).endswith(".tar.bz2"):
@@ -173,10 +198,11 @@ def write_repodata_record(info, dst_dir):
             json.dump(rr_json, rf, indent=2, sort_keys=True)
 
 
-def write_env_txt(info, dst_dir):
-    # TODO: extra_envs
+def write_env_txt(info, dst_dir, dists=None):
+    if dists is None:
+        dists = info["_dists"]
     dists_san_extn = []
-    for dist in info['_dists']:
+    for dist in dists:
         if filename_dist(dist).endswith('.conda'):
             dists_san_extn.append(filename_dist(dist)[:-6])
         elif filename_dist(dist).endswith('.tar.bz2'):
