@@ -1,6 +1,6 @@
 name: multi-env
 version: X
-installer_type: all
+installer_type: sh
 channels:
   - http://repo.anaconda.com/pkgs/main/
 specs:

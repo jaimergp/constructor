@@ -382,7 +382,6 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
             channels_remap=env_config.get("channels_remap", channels_remap),
             specs=env_config["specs"],
             menu_packages=env_config.get("menu_packages", menu_packages),
-            ignore_duplicate_files=ignore_duplicate_files,
             environment=None, environment_file=None, verbose=verbose,
             conda_exe=conda_exe
         )
@@ -397,12 +396,16 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
     extra_envs_data = {}
     for env_name, env_precs in extra_envs_precs.items():
         env_pc_recs, env_urls, env_dists, env_has_conda = _fetch_precs(
-            precs, download_dir, platform,
+            env_precs, download_dir, platform,
             transmute_file_type=transmute_file_type
         )
         extra_envs_data[env_name] = {"_urls": env_urls, "_dists": env_dists}
         pc_recs += env_pc_recs
         has_conda = has_conda or env_has_conda
+
+    if extra_envs_data:  # this can cause false positives
+        print("Info: Ignoring duplicate files because `extra_envs` in use")
+        ignore_duplicate_files = True
 
     pc_recs = list({rec: None for rec in pc_recs}) # deduplicate
     approx_tarballs_size, approx_pkgs_size, licenses = check_duplicates_files(
@@ -446,7 +449,7 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
         conda_context.ssl_verify = ssl_verify
 
         (_urls, dists, approx_tarballs_size, approx_pkgs_size,
-        has_conda, licenses, extra_envs_data) = _main(
+        has_conda, licenses, extra_envs_info) = _main(
             name, version, download_dir, platform, channel_urls, channels_remap, specs,
             exclude, menu_packages, ignore_duplicate_files, environment, environment_file,
             verbose, dry_run, conda_exe, transmute_file_type, extra_envs
@@ -459,4 +462,4 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
     info["_has_conda"] = has_conda
     info["_licenses"] = licenses
     # contains env_name: [_dists, _urls] for each extra environment
-    info["_extra_envs_data"] = extra_envs_data
+    info["_extra_envs_info"] = extra_envs_info

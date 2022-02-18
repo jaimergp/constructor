@@ -502,6 +502,7 @@ for env_pkgs in ${PREFIX}/pkgs/envs/*/; do
     CONDA_CHANNELS=__CHANNELS__ \
     CONDA_PKGS_DIRS="$PREFIX/pkgs" \
     "$CONDA_EXEC" install --offline --file "$env_pkgs/env.txt" -yp "$PREFIX/envs/$env_name" __SHORTCUTS__ || exit 1
+done
 #endif
 
 

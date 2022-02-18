@@ -42,8 +42,8 @@ def write_index_cache(info, dst_dir, used_packages):
     repodatas = {url: get_repodata(url) for url in _urls if url is not None}
 
     all_urls = info["_urls"].copy()
-    for env_data in info.get("extra_envs", {}).values():
-        all_urls += env_data["_urls"]
+    for env_info in info.get("_extra_envs_info", {}).values():
+        all_urls += env_info["_urls"]
 
     for url, _ in all_urls:
         src, subdir, fn = url.rsplit('/', 2)
@@ -105,8 +105,8 @@ def write_files(info, dst_dir):
         json.dump(system_info(), fo)
 
     all_urls = info["_urls"].copy()
-    for env_data in info.get("extra_envs", {}).values():
-        all_urls += env_data["_urls"]
+    for env_info in info.get("_extra_envs_info", {}).values():
+        all_urls += env_info["_urls"]
 
     final_urls_md5s = tuple((get_final_url(info, url), md5) for url, md5 in info["_urls"])
     all_final_urls_md5s = tuple((get_final_url(info, url), md5) for url, md5 in all_urls)
@@ -120,8 +120,8 @@ def write_files(info, dst_dir):
             fo.write('%s\n' % url)
 
     all_dists = info["_dists"].copy()
-    for env_data in info.get("extra_envs", {}).values():
-        all_dists += env_data["_dists"]
+    for env_info in info.get("_extra_envs_info", {}).values():
+        all_dists += env_info["_dists"]
 
     write_index_cache(info, dst_dir, all_dists)
 
@@ -136,14 +136,15 @@ def write_files(info, dst_dir):
     for fn in files:
         os.chmod(join(dst_dir, fn), 0o664)
 
-    for env_name, env_data in info.get("extra_envs", {}).items():
+    for env_name, env_info in info.get("_extra_envs_info", {}).items():
+        env_config = info["extra_envs"][env_name]
         env_dst_dir = os.path.join(dst_dir, "envs", env_name)
         # environment conda-meta
-        env_urls_md5 = tuple((get_final_url(info, url), md5) for url, md5 in env_data["_urls"])
-        user_requested_specs = env_data.get('user_requested_specs', env_data.get('specs', ()))
+        env_urls_md5 = tuple((get_final_url(info, url), md5) for url, md5 in env_info["_urls"])
+        user_requested_specs = env_config.get('user_requested_specs', env_config.get('specs', ()))
         write_conda_meta(info, env_dst_dir, env_urls_md5, user_requested_specs)
         # environment installation list
-        write_env_txt(info, env_dst_dir, env_data["_dists"])
+        write_env_txt(info, env_dst_dir, env_info["_dists"])
 
 
 def write_conda_meta(info, dst_dir, final_urls_md5s, user_requested_specs=None):
@@ -173,7 +174,7 @@ def write_conda_meta(info, dst_dir, final_urls_md5s, user_requested_specs=None):
 
 def write_repodata_record(info, dst_dir):
     all_dists = info["_dists"].copy()
-    for env_data in info.get("_extra_envs", {}).values():
+    for env_data in info.get("_extra_envs_info", {}).values():
         all_dists += env_data["_dists"]
     for dist in all_dists:
         if filename_dist(dist).endswith(".conda"):

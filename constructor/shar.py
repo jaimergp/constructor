@@ -103,7 +103,7 @@ def create(info, verbose=False):
     for dist in preconda_files:
         fn = filename_dist(dist)
         pre_t.add(join(tmp_dir, fn), 'pkgs/' + fn)
-    for env_name in info.get("extra_envs", {}):
+    for env_name in info.get("_extra_envs_info", {}):
         pre_t.add(join(tmp_dir, "envs", env_name, "env.txt"),
                   f"pkgs/envs/{env_name}/env.txt")
 
@@ -118,7 +118,7 @@ def create(info, verbose=False):
                 pre_t.add(join(cache_dir, cf), 'pkgs/cache/' + cf)
 
     all_dists = info["_dists"].copy()
-    for env_data in info.get("extra_envs", {}).values():
+    for env_data in info.get("_extra_envs_info", {}).values():
         all_dists += env_data["_dists"]
     for dist in all_dists:
         if filename_dist(dist).endswith(".conda"):
@@ -131,7 +131,7 @@ def create(info, verbose=False):
         pre_t.add(record_file_src, record_file_dest)
     pre_t.addfile(tarinfo=tarfile.TarInfo("conda-meta/history"))
     post_t.add(join(tmp_dir, 'conda-meta', 'history'), 'conda-meta/history')
-    for env_name in info.get("extra_envs", {}):
+    for env_name in info.get("_extra_envs_info", {}):
         pre_t.addfile(tarinfo=tarfile.TarInfo(f"envs/{env_name}/conda-meta/history"))
         post_t.add(join(tmp_dir, 'envs', env_name, 'conda-meta', 'history'),
                    f"envs/{env_name}/conda-meta/history")
