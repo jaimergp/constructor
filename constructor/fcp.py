@@ -189,10 +189,10 @@ def check_duplicates_files(pc_recs, platform, duplicate_files="error"):
 
     for member in map_members_scase:
         fns = map_members_scase[member]
-        msg_str = "File '%s' found in multiple packages: %s" % (
-                  member, ', '.join(fns))
         if len(fns) > 1:
-            if duplicate_files == "warning":
+            msg_str = "File '%s' found in multiple packages: %s" % (
+                    member, ', '.join(fns))
+            if duplicate_files == "warn":
                 print('Warning: {}'.format(msg_str))
             else:
                 sys.exit('Error: {}'.format(msg_str))
@@ -202,9 +202,9 @@ def check_duplicates_files(pc_recs, platform, duplicate_files="error"):
         # Throw warning on linux and error out on macOS/windows
         fns = map_members_icase[member]['fns']
         files = list(map_members_icase[member]['files'])
-        msg_str = "Files %s found in the package(s): %s" % (
-            str(files)[1:-1], ', '.join(fns))
         if len(files) > 1:
+            msg_str = "Files %s found in the package(s): %s" % (
+                str(files)[1:-1], ', '.join(fns))
             if duplicate_files == "warn" or platform.startswith('linux'):
                 print('Warning: {}'.format(msg_str))
             else:
