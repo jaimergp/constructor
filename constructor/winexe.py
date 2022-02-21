@@ -177,7 +177,7 @@ def make_nsi(info, dir_path):
         ('@NSIS_DIR@', NSIS_DIR),
         ('@BITS@', str(arch)),
         ('@PKG_COMMANDS@', '\n    '.join(pkg_commands(download_dir, dists))),
-        ('@SETUP_ENVS@', '\n    '.join(setup_envs_commands(info))),
+        ('@SETUP_ENVS@', '\n    '.join(setup_envs_commands(info, dir_path))),
         ('@WRITE_CONDARC@', '\n    '.join(add_condarc(info))),
         ('@SHORTCUTS@', shortcuts),
         ('@SIZE@', str(approx_pkgs_size_kb)),
