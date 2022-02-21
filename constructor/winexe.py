@@ -80,9 +80,9 @@ def setup_envs_commands(info, dir_path):
             prefix=join("$INSTDIR", "envs", env_name),
             env_txt=join("$INSTDIR", "pkgs", "envs", env_name, "env.txt"),
             env_txt_dir=join("$INSTDIR", "pkgs", "envs", env_name),
-            env_txt_abspath=join(dir_path, "pkgs", "envs", env_name, "env.txt"),
+            env_txt_abspath=join(dir_path, "envs", env_name, "env.txt"),
             conda_meta=join("$INSTDIR", "envs", env_name, "conda-meta"),
-            history_abspath=join(dir_path, "pkgs", "envs", env_name, "conda-meta", "history")
+            history_abspath=join(dir_path, "envs", env_name, "conda-meta", "history")
         ).splitlines()
 
     return [line.strip() for line in lines]
