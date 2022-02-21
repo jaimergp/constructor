@@ -488,7 +488,7 @@ CONDA_EXTRA_SAFETY_CHECKS=no \
 CONDA_CHANNELS=__CHANNELS__ \
 CONDA_PKGS_DIRS="$PREFIX/pkgs" \
 "$CONDA_EXEC" install --offline --file "$PREFIX/pkgs/env.txt" -yp "$PREFIX" __SHORTCUTS__ || exit 1
-rm -f $PREFIX/pkgs/env.txt
+rm -f "$PREFIX/pkgs/env.txt"
 
 __INSTALL_COMMANDS__
 
@@ -508,7 +508,7 @@ for env_pkgs in ${PREFIX}/pkgs/envs/*/; do
     CONDA_CHANNELS=__CHANNELS__ \
     CONDA_PKGS_DIRS="$PREFIX/pkgs" \
     "$CONDA_EXEC" install --offline --file "${env_pkgs}env.txt" -yp "$PREFIX/envs/$env_name" __SHORTCUTS__ || exit 1
-    rm "${env_pkgs}env.txt"
+    rm -f "${env_pkgs}env.txt"
 done
 #endif
 
