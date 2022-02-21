@@ -481,6 +481,8 @@ export FORCE
 # https://github.com/conda/conda/pull/9073
 mkdir -p ~/.conda > /dev/null 2>&1
 
+printf "Installing base environment...\n"
+
 CONDA_SAFETY_CHECKS=disabled \
 CONDA_EXTRA_SAFETY_CHECKS=no \
 CONDA_CHANNELS=__CHANNELS__ \
@@ -494,6 +496,7 @@ mkdir -p $PREFIX/envs
 
 for env_pkgs in ${PREFIX}/pkgs/envs/*/; do
     env_name=$(basename ${env_pkgs})
+    printf "Installing ${env_name} environment...\n"
     mkdir -p "$PREFIX/envs/$env_name"
     # TODO: custom channels per env?
     # TODO: custom shortcuts per env?
