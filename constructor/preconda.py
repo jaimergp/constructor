@@ -122,6 +122,7 @@ def write_files(info, dst_dir):
     all_dists = info["_dists"].copy()
     for env_info in info.get("_extra_envs_info", {}).values():
         all_dists += env_info["_dists"]
+    all_dists = list({dist: None for dist in all_dists})  # de-duplicate
 
     write_index_cache(info, dst_dir, all_dists)
 
