@@ -808,7 +808,8 @@ Section "Install"
 
     # A conda-meta\history file is required for a valid conda prefix
     SetOutPath "$INSTDIR\conda-meta"
-    File __CONDA_HISTORY__
+    FileOpen $0 "history" w
+    FileClose $0
 
     SetOutPath "$INSTDIR"
     File __CONDA_EXE__
