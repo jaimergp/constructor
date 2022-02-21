@@ -140,7 +140,9 @@ def _fetch(download_dir, precs):
     return tuple(pc.iter_records())
 
 
-def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
+def check_duplicates_files(pc_recs, platform, duplicate_files="error"):
+    assert duplicate_files in ("warn", "skip", "error")
+
     print('Checking for duplicate files ...')
 
     map_members_scase = defaultdict(set)
@@ -182,12 +184,15 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
                     license_files.append(os.path.join(directory, filepath))
         licenses[pc_rec.dist_str()][pc_rec.license] = license_files
 
+    if duplicate_files == "skip":
+        return total_tarball_size, total_extracted_pkgs_size, licenses
+
     for member in map_members_scase:
         fns = map_members_scase[member]
         msg_str = "File '%s' found in multiple packages: %s" % (
                   member, ', '.join(fns))
         if len(fns) > 1:
-            if ignore_duplicate_files:
+            if duplicate_files == "warning":
                 print('Warning: {}'.format(msg_str))
             else:
                 sys.exit('Error: {}'.format(msg_str))
@@ -200,7 +205,7 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
         msg_str = "Files %s found in the package(s): %s" % (
             str(files)[1:-1], ', '.join(fns))
         if len(files) > 1:
-            if ignore_duplicate_files or platform.startswith('linux'):
+            if duplicate_files == "warn" or platform.startswith('linux'):
                 print('Warning: {}'.format(msg_str))
             else:
                 sys.exit('Error: {}'.format(msg_str))
@@ -403,13 +408,14 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
         pc_recs += env_pc_recs
         has_conda = has_conda or env_has_conda
 
+    duplicate_files = "warn" if ignore_duplicate_files else "error"
     if extra_envs_data:  # this can cause false positives
-        print("Info: Ignoring duplicate files because `extra_envs` in use")
-        ignore_duplicate_files = True
+        print("Info: Skipping duplicate files checks because `extra_envs` in use")
+        duplicate_files = "skip"
 
     pc_recs = list({rec: None for rec in pc_recs}) # deduplicate
     approx_tarballs_size, approx_pkgs_size, licenses = check_duplicates_files(
-        pc_recs, platform, ignore_duplicate_files
+        pc_recs, platform, duplicate_files=duplicate_files
     )
 
     return _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda, licenses, extra_envs_data
