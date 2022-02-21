@@ -33,6 +33,7 @@ def write_readme(dst, info):
         all_dists = info["_dists"].copy()
         for env_info in info.get("_extra_envs_info", {}).values():
             all_dists += env_info["_dists"]
+        all_dists = list({dist: None for dist in all_dists})  # de-duplicate
 
         # TODO: Split output by env name
         for dist in sorted(all_dists):
@@ -343,6 +344,8 @@ def create(info, verbose=False):
     all_dists = info["_dists"].copy()
     for env_info in info.get("_extra_envs_info", {}).values():
         all_dists += env_info["_dists"]
+    all_dists = list({dist: None for dist in all_dists})  # de-duplicate
+
     for dist in all_dists:
         os.link(join(CACHE_DIR, dist), join(pkgs_dir, dist))
     shutil.copyfile(info['_conda_exe'], join(prefix, "_conda.exe"))
