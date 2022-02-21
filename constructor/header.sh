@@ -494,8 +494,11 @@ __INSTALL_COMMANDS__
 #if has_conda
 mkdir -p $PREFIX/envs
 
-for env_pkgs in ${PREFIX}/pkgs/envs/*/; do
+for env_pkgs in "${PREFIX}/pkgs/envs/*/"; do
     env_name=$(basename ${env_pkgs})
+    if [[ "${env_name}" == "*" ]]; then
+        continue
+    fi
     printf "Installing ${env_name} environment...\n"
     mkdir -p "$PREFIX/envs/$env_name"
     # TODO: custom channels per env?
@@ -504,7 +507,7 @@ for env_pkgs in ${PREFIX}/pkgs/envs/*/; do
     CONDA_EXTRA_SAFETY_CHECKS=no \
     CONDA_CHANNELS=__CHANNELS__ \
     CONDA_PKGS_DIRS="$PREFIX/pkgs" \
-    "$CONDA_EXEC" install --offline --file "$env_pkgs/env.txt" -yp "$PREFIX/envs/$env_name" __SHORTCUTS__ || exit 1
+    "$CONDA_EXEC" install --offline --file "${env_pkgs}env.txt" -yp "$PREFIX/envs/$env_name" __SHORTCUTS__ || exit 1
 done
 #endif
 

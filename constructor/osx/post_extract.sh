@@ -53,8 +53,11 @@ mkdir -p $PREFIX/envs
 
 for env_pkgs in "${PREFIX}/pkgs/envs/*/"; do
     env_name=$(basename ${env_pkgs})
-    notify "Installing ${env_name} packages..."
+    if [[ "${env_name}" == "*" ]]; then
+        continue
+    fi
 
+    notify "Installing ${env_name} packages..."
     mkdir -p "$PREFIX/envs/$env_name/conda-meta"
     touch "$PREFIX/envs/$env_name/conda-meta/history"
 
