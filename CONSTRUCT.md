@@ -93,10 +93,9 @@ is contained as a result of resolving the specs for `python 2.7`.
 
 _required:_ no<br/>
 _type:_ list<br/>
-A list of packages with menu items to be instsalled. The packages must have
-necessary metadata in "Menu/<package name>.json").  Menu items are currently
-only supported on Windows. By default, all menu items will be installed;
-supplying this list allows a subset to be selected instead.
+A list of packages with menu items to be installed. The packages must have
+necessary metadata in "Menu/<package name>.json"). By default, all menu items
+will be installed;supplying this list allows a subset to be selected instead.
 
 ## `ignore_duplicate_files`
 
@@ -500,6 +499,34 @@ shown at the end of the installer upon success. If this key is missing,
 it defaults to a message about Anaconda Cloud. You can disable it altogether
 so it defaults to the system message if you set this key to `""` (empty string).
 (MacOS only).
+
+## `extra_files`
+
+_required:_ no<br/>
+_types:_ list, dictionary<br/>
+Extra, non-packaged files, that should be added to the installer. This setting
+can be passed as:
+
+- `List[str]`: each found file will be copied to the root prefix
+- `Mapping[str, str]`: map of path in disk to path in prefix. (not implemented)
+
+
+## `extra_envs`
+
+_required:_ no<br/>
+_type:_ dictionary<br/>
+Create more environments, in addition to the default `base` provided by `specs`,
+`environment` or `environment_file`. This should be a map of `str` (environment
+name) to a dictionary of options:
+
+- `specs` (list of str): which packages to install in that environment
+- `channels` (list of str): using these channels
+- `user_requested_specs` (list of str): same as the global option, but for this env
+  (not implemented)
+- `exclude` (list of str): same as the global option, but for this env
+  (not implemented)
+- `menu_packages` (list of str): same as the global option, but for this env
+  (not implemented)
 
 
 ## Available selectors
