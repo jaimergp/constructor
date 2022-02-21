@@ -29,13 +29,18 @@ def write_readme(dst, info):
 
     with open(dst, 'w') as f:
         f.write(data)
-        for dist in sorted(info['_dists']):
+
+        all_dists = info["_dists"].copy()
+        for env_info in info.get("_extra_envs_info", {}).values():
+            all_dists += env_info["_dists"]
+
+        # TODO: Split output by env name
+        for dist in sorted(all_dists):
             if dist.startswith('_'):
                 continue
             f.write("{\\listtext\t\n\\f1 \\uc0\\u8259 \n\\f0 \t}%s %s\\\n" %
                     tuple(dist.rsplit('-', 2)[:2]))
         f.write('}')
-        # TODO: list extra_envs
 
 
 def _detect_mimetype(path: str):
@@ -335,9 +340,11 @@ def create(info, verbose=False):
     os.makedirs(pkgs_dir)
     preconda.write_files(info, pkgs_dir)
     preconda.copy_extra_files(info, prefix)
-    for dist in info['_dists']:
+    all_dists = info["_dists"].copy()
+    for env_info in info.get("_extra_envs_info", {}).values():
+        all_dists += env_info["_dists"]
+    for dist in all_dists:
         os.link(join(CACHE_DIR, dist), join(pkgs_dir, dist))
-    # TODO: extra_envs
     shutil.copyfile(info['_conda_exe'], join(prefix, "_conda.exe"))
     notarization_identity_name = info.get('notarization_identity_name')
     if notarization_identity_name:
