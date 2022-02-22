@@ -150,9 +150,9 @@ def main_build(dir_path, output_dir='.', platform=cc_platform,
             fo.write('# installer: %s\n' % basename(info['_outpath']))
             for dist in info['_dists']:
                 fo.write('%s\n' % dist)
-            for env_name, data in info["_extr_envs"].items():
+            for env_name, env_info in info["_extra_envs_info"].items():
                 fo.write(f"# extra_env: {env_name}\n")
-                for dist_ in data["_dists"]:
+                for dist_ in env_info["_dists"]:
                     fo.write('%s\n' % dist_)
 
         with open(join(output_dir, "info.json"), "w") as fo:
