@@ -806,11 +806,6 @@ Section "Install"
     System::Call 'kernel32::SetEnvironmentVariable(t,t)i("PATH", \
                  "$INSTDIR;$INSTDIR\Library\mingw-w64\bin;$INSTDIR\Library\usr\bin;$INSTDIR\Library\bin;$INSTDIR\Scripts;$INSTDIR\bin;$0;$0\system32;$0\system32\Wbem").r0'
 
-    # A conda-meta\history file is required for a valid conda prefix
-    SetOutPath "$INSTDIR\conda-meta"
-    FileOpen $0 "history" w
-    FileClose $0
-
     SetOutPath "$INSTDIR"
     File __CONDA_EXE__
 

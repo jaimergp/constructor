@@ -45,11 +45,21 @@ def pkg_commands(download_dir, dists):
 def setup_envs_commands(info, dir_path):
     template = """
         # Set up {name} env
-
-        SetOutPath "{env_txt_dir}"
-        File {env_txt_abspath}
         SetDetailsPrint TextOnly
         DetailPrint "Setting up the {name} environment ..."
+        SetDetailsPrint both
+
+        # List of packages to install
+        SetOutPath "{env_txt_dir}"
+        File {env_txt_abspath}
+
+        # A conda-meta\history file is required for a valid conda prefix
+        SetOutPath "{conda_meta}"
+        FileOpen $0 "history" w
+        FileClose $0
+
+        # Run conda
+        SetDetailsPrint TextOnly
         nsExec::ExecToLog '"$INSTDIR\_conda.exe" install --offline -yp "{prefix}" --file "{env_txt}" @SHORTCUTS@'
         Pop $0
         SetDetailsPrint both
