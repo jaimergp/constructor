@@ -808,6 +808,7 @@ Section "Install"
 
     SetOutPath "$INSTDIR"
     File __CONDA_EXE__
+    @EXTRA_FILES@
 
     ${If} $InstMode = ${JUST_ME}
         SetOutPath "$INSTDIR"

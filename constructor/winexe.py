@@ -98,7 +98,7 @@ def setup_envs_commands(info, dir_path):
     return [line.strip() for line in lines]
 
 
-def make_nsi(info, dir_path):
+def make_nsi(info, dir_path, extra_files=()):
     "Creates the tmp/main.nsi from the template file"
     name = info['name']
     download_dir = info['_download_dir']
@@ -194,6 +194,9 @@ def make_nsi(info, dir_path):
         ('@UNINSTALL_NAME@', info.get('uninstall_name',
                                       '${NAME} ${VERSION} (Python ${PYVERSION} ${ARCH})'
                                       )),
+        # TODO: We are dumping all files to the root location of the installation
+        # subdirectory destination not supported yet
+        ('@EXTRA_FILES@', '\n    '.join([f"File {path}" for path in extra_files])),
     ]:
         data = data.replace(key, value)
 
@@ -240,7 +243,7 @@ def create(info, verbose=False):
     verify_nsis_install()
     tmp_dir = tempfile.mkdtemp()
     preconda_write_files(info, tmp_dir)
-    copy_extra_files(info, tmp_dir)
+    copied_extra_files = copy_extra_files(info, tmp_dir)
     shutil.copyfile(info['_conda_exe'], join(tmp_dir, '_conda.exe'))
 
     if 'pre_install' in info:
@@ -261,7 +264,7 @@ def create(info, verbose=False):
             fo.write(":: this is an empty pre uninstall .bat script\n")
 
     write_images(info, tmp_dir)
-    nsi = make_nsi(info, tmp_dir)
+    nsi = make_nsi(info, tmp_dir, extra_files=copied_extra_files)
     if verbose:
         verbosity = 'V4'
     else:
