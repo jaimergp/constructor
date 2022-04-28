@@ -1,4 +1,5 @@
 name: osxpkgtest
+pkg_name: osxpkgtest-0.1
 version: 1.2.3
 
 channels:

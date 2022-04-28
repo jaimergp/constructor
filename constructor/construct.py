@@ -268,14 +268,20 @@ the installation prefix for all users installation will be
     ('default_location_pkg', False, str, '''
 Default installation subdirectory in the chosen volume. In PKG installers,
 default installation locations are configured differently. The user can choose
-between a "Just me" installation (which would result in `~/<NAME>`) or another
-volume (which defaults to `<VOLUME>/<NAME>`). If you want a different default,
+between a "Just me" installation (which would result in `~/<PKG_NAME>`) or another
+volume (which defaults to `<VOLUME>/<PKG_NAME>`). If you want a different default,
 you can add a middle component with this option, let's call it `location`. It would
-result in these default values: `~/<LOCATION>/<NAME>` for "Just me",
-`<VOLUME>/<LOCATION>/<NAME>` for custom volumes. For example, setting this option
-to `/Library` in a "Just me" installation will give you `~/Library/<NAME>`.
+result in these default values: `~/<LOCATION>/<PKG_NAME>` for "Just me",
+`<VOLUME>/<LOCATION>/<PKG_NAME>` for custom volumes. For example, setting this option
+to `/Library` in a "Just me" installation will give you `~/Library/<PKG_NAME>`.
 Internally, this is passed to `pkgbuild --install-location`.
 macOS only.
+'''),
+
+    ('pkg_name', False, str, '''
+Internal identifier for the installer. This is used in the build prefix and will
+determine part of the default location path. Combine with `default_location_pkg`
+for more flexibility. If not provided, the value of `name` will be used.  (MacOS only)
 '''),
 
     ('welcome_image',          False, str, '''

@@ -9,7 +9,7 @@
 # affected by those restrictions, but it's only executed once the installer has begun
 # so the only way to prevent an action is to abort and start again from the beginning.
 
-if [[ -e "$2/__NAME_LOWER__" ]]; then
+if [[ -e "$2/__PKG_NAME_LOWER__" ]]; then
     # The OS X installer provides no way to send a message to the user if this
     # script fails. So we use AppleScript to do it.
 
@@ -17,7 +17,7 @@ if [[ -e "$2/__NAME_LOWER__" ]]; then
     # around it.  http://stackoverflow.com/a/11874852/161801
     (osascript -e "try
 set theAlertText to \"Chosen path already exists!\"
-set theAlertMessage to \"'$2/__NAME_LOWER__' already exists. Please, relaunch the installer and choose another location in the Destination Select step.\"
+set theAlertMessage to \"'$2/__PKG_NAME_LOWER__' already exists. If you already installed __NAME__ in the past and just want to update, please use the in-app options. If this is not the case, please relaunch the installer and choose another location in the Destination Select step.\"
 display alert theAlertText message theAlertMessage as critical buttons {\"OK\"} default button {\"OK\"}
 end
 answer
@@ -30,7 +30,7 @@ case "$2" in
      *\ * )
            (osascript -e "try
 set theAlertText to \"Chosen path contain spaces!\"
-set theAlertMessage to \"'$2/__NAME_LOWER__' contains spaces. Please, relaunch the installer and choose another location in the Destination Select step.\"
+set theAlertMessage to \"'$2/__PKG_NAME_LOWER__' contains spaces. Please, relaunch the installer and choose another location in the Destination Select step.\"
 display alert theAlertText message theAlertMessage as critical buttons {\"OK\"} default button {\"OK\"}
 end
 answer

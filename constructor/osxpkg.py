@@ -23,7 +23,7 @@ def write_readme(dst, info):
         data = fi.read()
 
     # This is necessary for when installing on case-sensitive macOS filesystems.
-    data = data.replace('__NAME_LOWER__', info['name'].lower())
+    data = data.replace('__PKG_NAME_LOWER__', info.get("pkg_name", info['name']).lower())
     data = data.replace('__NAME__', info['name'])
     data = data.replace('__VERSION__', info['version'])
 
@@ -227,8 +227,9 @@ def move_script(src, dst, info):
         data = fi.read()
 
     # This is necessary for when installing on case-sensitive macOS filesystems.
-    data = data.replace('__NAME_LOWER__', info['name'].lower())
+    data = data.replace('__PKG_NAME_LOWER__', info.get("pkg_name", info['name']).lower())
     data = data.replace('__NAME__', info['name'])
+    data = data.replace('__VERSION__', info['version'])
     data = data.replace('__CHANNELS__', ','.join(get_final_channels(info)))
     data = data.replace('__WRITE_CONDARC__', '\n'.join(add_condarc(info)))
 
@@ -321,7 +322,7 @@ def create(info, verbose=False):
     PACKAGES_DIR = join(CACHE_DIR, "built_pkgs")
 
     fresh_dir(PACKAGES_DIR)
-    prefix = join(PACKAGE_ROOT, info['name'].lower())
+    prefix = join(PACKAGE_ROOT, info.get("pkg_name", info['name']).lower())
 
 
     # See http://stackoverflow.com/a/11487658/161801 for how all this works.
