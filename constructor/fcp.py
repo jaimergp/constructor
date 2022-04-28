@@ -140,7 +140,9 @@ def _fetch(download_dir, precs):
     return tuple(pc.iter_records())
 
 
-def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
+def check_duplicates_files(pc_recs, platform, duplicate_files="error"):
+    assert duplicate_files in ("warn", "skip", "error")
+
     print('Checking for duplicate files ...')
 
     map_members_scase = defaultdict(set)
@@ -182,12 +184,15 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
                     license_files.append(os.path.join(directory, filepath))
         licenses[pc_rec.dist_str()][pc_rec.license] = license_files
 
+    if duplicate_files == "skip":
+        return total_tarball_size, total_extracted_pkgs_size, licenses
+
     for member in map_members_scase:
         fns = map_members_scase[member]
-        msg_str = "File '%s' found in multiple packages: %s" % (
-                  member, ', '.join(fns))
         if len(fns) > 1:
-            if ignore_duplicate_files:
+            msg_str = "File '%s' found in multiple packages: %s" % (
+                    member, ', '.join(fns))
+            if duplicate_files == "warn":
                 print('Warning: {}'.format(msg_str))
             else:
                 sys.exit('Error: {}'.format(msg_str))
@@ -197,10 +202,10 @@ def check_duplicates_files(pc_recs, platform, ignore_duplicate_files=True):
         # Throw warning on linux and error out on macOS/windows
         fns = map_members_icase[member]['fns']
         files = list(map_members_icase[member]['files'])
-        msg_str = "Files %s found in the package(s): %s" % (
-            str(files)[1:-1], ', '.join(fns))
         if len(files) > 1:
-            if ignore_duplicate_files or platform.startswith('linux'):
+            msg_str = "Files %s found in the package(s): %s" % (
+                str(files)[1:-1], ', '.join(fns))
+            if duplicate_files == "warn" or platform.startswith('linux'):
                 print('Warning: {}'.format(msg_str))
             else:
                 sys.exit('Error: {}'.format(msg_str))
@@ -249,10 +254,9 @@ def _precs_from_environment(environment, download_dir, user_conda):
     return precs
 
 
-def _main(name, version, download_dir, platform, channel_urls=(), channels_remap=(), specs=(),
-          exclude=(), menu_packages=(),  ignore_duplicate_files=True, environment=None,
-          environment_file=None, verbose=True, dry_run=False, conda_exe="conda.exe",
-          transmute_file_type=''):
+def _solve_precs(name, version, download_dir, platform, channel_urls=(), channels_remap=(), specs=(),
+                 exclude=(), menu_packages=(), environment=None, environment_file=None,
+                 verbose=True, conda_exe="conda.exe"):
     # Add python to specs, since all installers need a python interpreter. In the future we'll
     # probably want to add conda too.
     specs = list(concatv(specs, ("python",)))
@@ -317,9 +321,16 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
         more_recent_versions = _find_out_of_date_precs(precs, channel_urls, platform)
         _show(name, version, platform, download_dir, precs, more_recent_versions)
 
-    if dry_run:
-        return None, None, None, None, None
+    if environment_file:
+        import shutil
 
+        shutil.rmtree(environment)
+
+    return precs
+
+
+def _fetch_precs(precs, download_dir, platform, ignore_duplicate_files=True,
+                 transmute_file_type='', extra_envs=None):
     pc_recs = _fetch(download_dir, precs)
     # Constructor cache directory can have multiple packages from different
     # installer creations. Filter out those which the solver picked.
@@ -328,10 +339,6 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
 
     _urls = [(pc_rec.url, pc_rec.md5) for pc_rec in pc_recs]
     has_conda = any(pc_rec.name == 'conda' for pc_rec in pc_recs)
-
-    approx_tarballs_size, approx_pkgs_size, licenses = check_duplicates_files(
-        pc_recs, platform, ignore_duplicate_files
-    )
 
     dists = list(prec.fn for prec in precs)
 
@@ -355,11 +362,63 @@ def _main(name, version, download_dir, platform, channel_urls=(), channels_remap
                 new_dists.append(dist)
         dists = new_dists
 
-    if environment_file:
-        import shutil
+    return pc_recs, _urls, dists, has_conda
 
-        shutil.rmtree(environment)
-    return _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda, licenses
+
+def _main(name, version, download_dir, platform, channel_urls=(), channels_remap=(), specs=(),
+          exclude=(), menu_packages=(), ignore_duplicate_files=True, environment=None,
+          environment_file=None, verbose=True, dry_run=False, conda_exe="conda.exe",
+          transmute_file_type='', extra_envs=None):
+    precs = _solve_precs(
+        name, version, download_dir, platform, channel_urls=channel_urls,
+        channels_remap=channels_remap, specs=specs, exclude=exclude,
+        menu_packages=menu_packages, environment=environment,
+        environment_file=environment_file, verbose=verbose, conda_exe=conda_exe
+    )
+
+    extra_envs = extra_envs or {}
+    extra_envs_precs = {}
+    for env_name, env_config in extra_envs.items():
+        if verbose:
+            print("Solving extra environment:", env_name)
+        extra_envs_precs[env_name] = _solve_precs(
+            f"{name}+{env_name}", version, download_dir, platform,
+            channel_urls=env_config.get("channels") or channel_urls,
+            channels_remap=env_config.get("channels_remap", channels_remap),
+            specs=env_config["specs"],
+            menu_packages=env_config.get("menu_packages", menu_packages),
+            environment=None, environment_file=None, verbose=verbose,
+            conda_exe=conda_exe
+        )
+    if dry_run:
+        return None, None, None, None, None, None
+
+    pc_recs, _urls, dists, has_conda = _fetch_precs(
+        precs, download_dir, platform,
+        transmute_file_type=transmute_file_type
+    )
+
+    extra_envs_data = {}
+    for env_name, env_precs in extra_envs_precs.items():
+        env_pc_recs, env_urls, env_dists, env_has_conda = _fetch_precs(
+            env_precs, download_dir, platform,
+            transmute_file_type=transmute_file_type
+        )
+        extra_envs_data[env_name] = {"_urls": env_urls, "_dists": env_dists}
+        pc_recs += env_pc_recs
+        has_conda = has_conda or env_has_conda
+
+    duplicate_files = "warn" if ignore_duplicate_files else "error"
+    if extra_envs_data:  # this can cause false positives
+        print("Info: Skipping duplicate files checks because `extra_envs` in use")
+        duplicate_files = "skip"
+
+    pc_recs = list({rec: None for rec in pc_recs}) # deduplicate
+    approx_tarballs_size, approx_pkgs_size, licenses = check_duplicates_files(
+        pc_recs, platform, duplicate_files=duplicate_files
+    )
+
+    return _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda, licenses, extra_envs_data
 
 
 def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
@@ -376,6 +435,7 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
     environment = info.get("environment", None)
     environment_file = info.get("environment_file", None)
     transmute_file_type = info.get("transmute_file_type", "")
+    extra_envs = info.get("extra_envs", {})
 
     if not channel_urls and not channels_remap:
         sys.exit("Error: at least one entry in 'channels' or 'channels_remap' is required")
@@ -394,15 +454,18 @@ def main(info, verbose=True, dry_run=False, conda_exe="conda.exe"):
         conda_context.proxy_servers = proxy_servers
         conda_context.ssl_verify = ssl_verify
 
-        _urls, dists, approx_tarballs_size, approx_pkgs_size, has_conda, licenses = _main(
+        (_urls, dists, approx_tarballs_size, approx_pkgs_size,
+        has_conda, licenses, extra_envs_info) = _main(
             name, version, download_dir, platform, channel_urls, channels_remap, specs,
             exclude, menu_packages, ignore_duplicate_files, environment, environment_file,
-            verbose, dry_run, conda_exe, transmute_file_type
+            verbose, dry_run, conda_exe, transmute_file_type, extra_envs
         )
 
-    info["_urls"] = _urls
-    info["_dists"] = dists
+    info["_urls"] = _urls  # needed to mock the repodata cache
+    info["_dists"] = dists  # needed to tell conda what to install
     info["_approx_tarballs_size"] = approx_tarballs_size
     info["_approx_pkgs_size"] = approx_pkgs_size
     info["_has_conda"] = has_conda
     info["_licenses"] = licenses
+    # contains env_name: [_dists, _urls] for each extra environment
+    info["_extra_envs_info"] = extra_envs_info

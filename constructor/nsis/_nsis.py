@@ -9,6 +9,7 @@
 
 import os
 import re
+import json
 import sys
 import traceback
 from os.path import isfile, join, exists, basename
@@ -126,8 +127,23 @@ def mk_menus(remove=False, prefix=None, pkg_names=None, root_prefix=None):
             continue
         shortcut = join(menu_dir, fn)
         try:
-            menuinst.install(shortcut, remove, prefix=prefix,
-                             root_prefix=root_prefix)
+            with open(shortcut) as f:
+                metadata = json.load(f)
+            if "$id" not in metadata:  # old style JSON
+                if not sys.platform.startswith("win"):
+                    raise RuntimeError(
+                        "menuinst._legacy is only supported on Windows. "
+                        "Switch to the new-style menu definitions for "
+                        "cross-platform compatibility."
+                    )
+                else:
+                    from menuinst._legacy import install
+
+                    install(shortcut, remove, prefix=prefix, root_prefix=root_prefix)
+            elif remove:
+                menuinst.remove(metadata, target_prefix=prefix, base_prefix=root_prefix)
+            else:
+                menuinst.install(metadata, target_prefix=prefix, base_prefix=root_prefix)
         except Exception as e:
             out("Failed to process %s...\n" % shortcut)
             err("Error: %s\n" % str(e))
